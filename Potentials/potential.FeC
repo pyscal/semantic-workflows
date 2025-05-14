@@ -1,0 +1,11 @@
+# iron and carbon
+# FeC_Becquart.eam.alloy was mordified Fe-Fe manually, replaced Fe-Fe=0 
+pair_style                      hybrid/overlay eam/alloy eam/alloy
+pair_coeff                      * * eam/alloy 1 Mod.FeC_Becquart.eam.alloy Fe C
+pair_coeff                      * * eam/alloy 2 Fe_Ack.eam Fe NULL
+# Mass
+mass 1 55.85 #iron
+mass 2 12.0107 # mass of carbon
+# Setup neighbor style
+neighbor 2.0 nsq
+neigh_modify once no every 1 delay 0 check yes
