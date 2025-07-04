@@ -1,0 +1,99 @@
+# ===== Stack Fault Energy Calculation for BCC Fe =====
+
+clear
+units           metal
+dimension       3
+boundary        p p p
+atom_style      atomic
+
+# ===== Structure and Orientation =====
+variable        latparam1 equal 2.86
+read_data       data.bcc_110.lmp   # Created with Atomsk with orientation [111] [1-10] [11-2]
+
+# ===== Interatomic Potential =====
+pair_style      eam/alloy
+pair_coeff      * * Fe_Ack.eam Fe
+
+# ===== Group and Region Definitions (based on z:  [11-2] axis) =====
+region          bot block INF INF INF INF INF 18 units lattice
+region          top block INF INF INF INF 18.3 INF units lattice
+region          mobile block INF INF INF INF 2 32  units lattice
+
+group           bot region bot
+group           top region top
+group           mobile region mobile
+
+# ===== Pre-Minimization Box Relaxation =====
+thermo          100
+fix             1 all box/relax aniso 0.0 vmax 0.001
+min_style       cg
+minimize        1e-20 1e-20 10000 50000
+unfix           1
+
+# ===== Compute Settings =====
+compute         peratom all pe/atom
+compute         eatoms all reduce sum c_peratom
+compute         csym all centro/atom bcc
+
+thermo          10
+thermo_style    custom step pe c_eatoms
+run             0
+
+# ===== Initial Energy and Geometry Variables =====
+variable        E equal c_eatoms
+variable        Eo equal $E
+
+variable        LenX equal lx
+variable        LenY equal ly
+variable        LenZ equal lz
+variable        Area equal "v_LenX * v_LenY"
+variable        Conv equal 16021.77   # eV/Å² to mJ/m²
+
+# ===== Deformation Loop =====
+
+# Header for output file
+variable header string "#displacement, SFE_mJ_per_m2"
+print "${header}" file Result.txt screen no
+
+
+variable        nloop equal 58
+variable        a loop ${nloop}
+label           loop
+
+reset_timestep  0
+
+# Displace along x-direction ([111]), fault normal is z ([11-2])
+variable        x_displace equal "-0.0005 * v_a * (v_latparam1)"
+displace_atoms  top move ${x_displace} 0.0 0.0 units box
+
+# Constrain motion along x and y to simulate shear
+fix             1 all setforce 0.0 0.0 NULL
+
+# Relax atomic positions (box is fixed)
+min_style       cg
+#minimize 1e-10 1e-10 1 1
+minimize        1e-25 1e-25 10000 50000
+run             0
+#run             1
+
+#unfix           1
+
+# ===== SFE Calculation =====
+variable        Ef equal c_eatoms
+variable        Cf equal 1.60217657e-16    # eV to mJ
+variable        A equal ${Area}*1e-20
+variable        SFE equal (((${Ef}-${Eo})*${Cf})/${A})/2
+
+print "${x_displace}, ${SFE}" append Result.txt screen no
+
+
+# ===== Output =====
+dump            1 all custom 1 dump.${a} id type x y z
+run             1
+undump 1
+
+next            a
+jump            in.SFE_Fe_BCC loop
+
+# ===== Simulation Complete =====
+print           "All done"
