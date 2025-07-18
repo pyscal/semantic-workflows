@@ -1,9 +1,11 @@
 from typing import Optional
 from ase.atoms import Atoms
+from ase.build import bulk as ase_bulk
+ 
 
-# from pyiron_workflow.workflow import Workflow
+from pyiron_workflow import as_function_node, as_macro_node
 
-
+@as_function_node("structure")
 def bulk(
     name: str,
     crystalstructure: Optional[str] = None,
@@ -14,15 +16,14 @@ def bulk(
     orthorhombic: bool = False,
     cubic: bool = False,
 ):
-    from pyiron_atomistics import _StructureFactory
 
-    return _StructureFactory().bulk(
+    return ase_bulk(
         name,
-        crystalstructure,
-        a,
-        c,
-        c_over_a,
-        u,
-        orthorhombic,
-        cubic,
+        crystalstructure=crystalstructure,
+        a=a,
+        c=c,
+        covera = c_over_a,
+        u = u,
+        orthorhombic = orthorhombic,
+        cubic = cubic,
     )
