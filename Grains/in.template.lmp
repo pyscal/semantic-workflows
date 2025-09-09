@@ -1,0 +1,113 @@
+# -------------------------------------------------------------------
+# LAMMPS Input Script - Fe System Compression Test (templated)
+# -------------------------------------------------------------------
+
+log             Log.txt append
+clear
+
+units           metal
+dimension       3
+boundary        p p p
+atom_style      atomic
+atom_modify     map array
+
+read_data __DATAFILE__
+
+pair_style      eam/alloy
+pair_coeff      * * __POTENTIAL__ Fe
+mass            1 55.85
+
+neighbor        2.0 nsq
+neigh_modify    once no every 1 delay 0 check yes
+
+group           Fe type 1
+
+variable N         equal step
+variable LenX      equal lx
+variable LenY      equal ly
+variable LenZ      equal lz
+variable Volu      equal vol
+variable Tem       equal temp
+variable Pres      equal press/10000
+variable TotEng    equal pe
+variable NumAto    equal count(Fe)
+variable TotEngAto equal v_TotEng/v_NumAto
+variable Enth      equal enthalpy
+variable EnthAto   equal v_Enth/v_NumAto
+variable VolCm     equal (1.0e-24*v_Volu*6.022e23)/v_NumAto
+variable LenXLat   equal v_LenX/v_nl
+variable LenYLat   equal v_LenY/v_nl
+variable LenZLat   equal v_LenZ/v_nl
+variable p2        equal pxx/10000
+variable p3        equal pyy/10000
+variable p4        equal pzz/10000
+variable p5        equal pxy/10000
+variable p6        equal pxz/10000
+variable p7        equal pyz/10000
+
+thermo            1000
+thermo_style      custom step temp press vol lx ly lz pe enthalpy v_TotEngAto v_EnthAto
+
+variable ts    equal 0.001
+timestep       ${ts}
+variable temp  equal 750
+variable DampT equal "v_ts*100"
+variable DampP equal "v_ts*1000"
+
+velocity        all create 10.0 4928459 mom yes rot yes dist gaussian
+
+fix 2 all temp/rescale 1 10.0 ${temp} 1.0 1.0
+fix 3 all nph x 0.0 0.0 ${DampP} y 0.0 0.0 ${DampP} z 0.0 0.0 ${DampP} drag 1.0 nreset 1000
+variable runing equal "20/v_ts"
+run ${runing}
+unfix 2
+unfix 3
+
+fix 2 all temp/rescale 1 ${temp} ${temp} 1.0 1.0
+fix 3 all nph x 0.0 0.0 ${DampP} y 0.0 0.0 ${DampP} z 0.0 0.0 ${DampP} drag 1.0 nreset 1000
+variable runing equal "100/v_ts"
+run ${runing}
+unfix 2
+unfix 3
+
+fix 2 all temp/rescale 1 ${temp} 10.0 1.0 1.0
+fix 3 all nph x 0.0 0.0 ${DampP} y 0.0 0.0 ${DampP} z 0.0 0.0 ${DampP} drag 1.0 nreset 1000
+variable runing equal "20/v_ts"
+run ${runing}
+unfix 2
+unfix 3
+
+variable L0x equal lx
+variable L0y equal ly
+variable L0z equal lz
+
+variable strainx equal "(lx - v_L0x)/v_L0x"
+variable strainy equal "(ly - v_L0y)/v_L0y"
+variable strainz equal "(lz - v_L0z)/v_L0z"
+variable p1x equal "-v_strainx*100"
+variable p1y equal "-v_strainy*100"
+variable p1z equal "-v_strainz*100"
+
+write_restart restart.equil
+
+reset_timestep  0
+compute         stress all stress/atom NULL
+compute         peratom all pe/atom
+
+dump myDump all custom 7500 dump.* id type x y z c_peratom c_stress[1] c_stress[2] c_stress[3] c_stress[4] c_stress[5] c_stress[6]
+
+variable srate  equal 1.0e9
+variable srate1 equal "-v_srate / 1.0e12"
+
+fix 2 all nve
+fix 3 all deform 1 x erate ${srate1} y erate ${srate1} z erate ${srate1}
+
+fix def1 all print 100 "${N}, ${Tem}, ${Pres}, ${EnthAto}, ${TotEngAto}, ${VolCm}, ${p1x}, ${p1y}, ${p1z}" append Result.txt screen no
+fix def2 all print 100 "${N}, ${p2}, ${p3}, ${p4}, ${p5}, ${p6}, ${p7}, ${p1x}, ${p1y}, ${p1z}" append Result_P.txt screen no
+
+restart 10000 restart.*
+run_style verlet
+variable runing3 equal "75/v_ts"
+run ${runing3}
+
+print "ALL DONE"
