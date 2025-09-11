@@ -27,3 +27,10 @@ def bulk(
         orthorhombic = orthorhombic,
         cubic = cubic,
     )
+
+@as_function_node("structure")
+def repeat(
+    structure: Atoms,
+    repetitions: tuple[int, int, int],
+) -> Atoms:
+    return structure.repeat(repetitions)
