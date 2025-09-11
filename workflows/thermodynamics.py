@@ -139,7 +139,9 @@ def calculate_free_energy(
     _run_cleanup(simfolder, calc.lattice)
 
     results = job.report["results"]
-
+    results['temperature'] = temperature
+    results['pressure'] = pressure
+    
     if mode == 'ts':
         outfile = os.path.join(simfolder, "temperature_sweep.dat")
         temp, fe = np.loadtxt(outfile, unpack=True, usecols=(0,1))
