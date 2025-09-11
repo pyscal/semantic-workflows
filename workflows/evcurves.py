@@ -29,7 +29,8 @@ def calculate_ev_curves(structure, pair_style, pair_coeff, vol_range=0.3, num_of
     v_fit = np.linspace(min(volumes), max(volumes), 100, endpoint=True)
     e_fit = birch_murnaghan_eval(v_fit, V0, E0, B0, Bp)
     bulk_modulus = B0*160.2176621
-    return v_fit, e_fit, bulk_modulus
+    datadict = {'energy': e_fit, 'volume': v_fit, 'bulk_modulus': bulk_modulus}
+    return datadict
 
 
 def scale_atoms(structure, scale_factor):
