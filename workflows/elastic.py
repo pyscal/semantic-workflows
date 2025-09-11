@@ -136,12 +136,9 @@ def calculate_elastic_constants(structure, pair_style, pair_coeff, cores=1,
         energy_tolerance=0.0,
         force_tolerance=1.0e-15,
         max_iterations=100,):
-    #write structure
-    import os
-    dfile = os.path.join(os.path.dirname(__file__), 'displace.mod')
 
     write('tmp.data', structure, format='lammps-data')
-    lmp = LammpsLibrary(cores=1)
+    lmp = LammpsLibrary(cores=cores)
 
     lmp.command(f"variable up equal {finite_deformation_size}")
     lmp.command("variable atomjiggle equal 1.0e-5")

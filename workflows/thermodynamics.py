@@ -1,5 +1,67 @@
 import pandas as pd
 from pyiron_workflow import as_function_node, as_macro_node
+from ase.io import read, write
+from pylammpsmpi import LammpsLibrary
+import scipy.constants as sc
+import numpy as np
+
+@as_function_node
+def calculate_thermal_properties(structure, pair_style, pair_coeff, 
+                                temperature, pressure=0, cores=1,
+                                n_equilibration_steps=15000,
+                                n_run_steps=25000):
+    
+    ev_to_j = sc.physical_constants["electron volt-joule relationship"][0]
+    Av =  sc.physical_constants["Avogadro constant"][0]
+    A_to_m = 1E-10
+    kB = sc.physical_constants["Boltzmann constant"][0]
+
+    write('tmp.data', structure, format='lammps-data')
+
+    from mendeleev import element
+
+    symbols, counts = list(np.unique(structure.get_chemical_symbols(), return_counts=True))
+    masses = [element(symbol).mass for symbol in symbols]
+
+    lmp = LammpsLibrary(cores=cores)
+    lmp.command("units metal") 
+    lmp.command("dimension 3") 
+    lmp.command("boundary p p p") 
+    lmp.command("atom_style atomic")
+
+    lmp.command("read_data tmp.data")
+    for x in range(len(masses)):
+        lmp.command(f"mass {x+1} {masses[x]}")
+
+    lmp.command(f"pair_style {pair_style}")
+    lmp.command(f"pair_coeff {pair_coeff}")
+
+    T = temperature
+    P = pressure
+
+    lmp.velocity("all create", T, np.random.randint(0, 1000))
+    lmp.fix("1 all npt temp", T, T, 0.1, "iso", 0.0, 0.0, 0.1)
+    lmp.run(n_equilibration_steps)
+    lmp.fix("extra all print 100 \" $(pe) $(ke) $(etotal) $(press) $(vol) $(temp)\" file data.dat screen no")
+
+    lmp.run(n_run_steps)
+
+    pe, ke, etotal, press, vol, temp = np.loadtxt("data.dat", unpack=True)
+    efluct = etotal - np.mean(etotal)
+
+    efluctsq = (efluct*ev_to_j)**2
+    cp = np.mean(efluctsq)/(kB*T*T)
+    w = 0
+    for m, c in zip(masses, counts):
+        w += (c/Av)*m*1E3
+
+    cp = (cp/w)/1E-3
+    
+    crossfluct = (efluct*ev_to_j)*(vol - np.mean(vol))
+    ap = np.mean(crossfluct)/(kB*T*T*np.mean(vol)) #1/K
+
+    results = {'specific_heat': cp, 'thermal_expansion': ap, 'volume': np.mean(vol),}
+    return results
 
 def calphy_default_input():
     return {
