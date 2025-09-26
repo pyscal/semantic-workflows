@@ -3,7 +3,6 @@ import numpy as np
 from scipy.optimize import curve_fit
 from ase.io import read, write
 from pylammpsmpi import LammpsLibrary
-from pyiron_workflow import as_function_node, as_macro_node
 
 
 def _displace(lmp, dir, pair_style, pair_coeff):
@@ -130,7 +129,6 @@ def _displace(lmp, dir, pair_style, pair_coeff):
     lmp.command("variable dir delete")
     return lmp
 
-@as_function_node
 def calculate_elastic_constants(structure, pair_style, pair_coeff, cores=1,
         finite_deformation_size=1e-6,
         energy_tolerance=0.0,
@@ -328,7 +326,6 @@ def calculate_elastic_constants(structure, pair_style, pair_coeff, cores=1,
     return results
 
 
-@as_function_node
 def compression_test(structure, pair_style, 
                      pair_coeff, cores=1,
                      temperature=10,

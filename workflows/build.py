@@ -3,9 +3,6 @@ from ase.atoms import Atoms
 from ase.build import bulk as ase_bulk
 
 
-from pyiron_workflow import as_function_node, as_macro_node
-
-@as_function_node("structure")
 def bulk(
     name: str,
     crystalstructure: Optional[str] = None,
@@ -28,14 +25,12 @@ def bulk(
         cubic = cubic,
     )
 
-@as_function_node("structure")
 def repeat(
     structure: Atoms,
     repetitions: tuple[int, int, int],
 ) -> Atoms:
     return structure.repeat(repetitions)
 
-@as_function_node("structure")
 def polycrystal(structure: Atoms, box_size: tuple[float, float, float], grain_size: float) -> Atoms:
     import numpy as np
     import os

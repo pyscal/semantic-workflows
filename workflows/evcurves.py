@@ -3,9 +3,8 @@ import numpy as np
 from scipy.optimize import curve_fit
 from ase.io import read, write
 from pylammpsmpi import LammpsLibrary
-from pyiron_workflow import as_function_node, as_macro_node
 
-@as_function_node
+
 def calculate_ev_curves(structure, pair_style, pair_coeff, vol_range=0.3, num_of_points=5, cores=1, 
                     e_tol=0, f_tol=0.0001, n_energy_steps=1e5, n_force_steps=1e6):
     

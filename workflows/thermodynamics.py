@@ -1,11 +1,10 @@
 import pandas as pd
-from pyiron_workflow import as_function_node, as_macro_node
 from ase.io import read, write
 from pylammpsmpi import LammpsLibrary
 import scipy.constants as sc
 import numpy as np
 
-@as_function_node
+
 def calculate_thermal_properties(structure, pair_style, pair_coeff, 
                                 temperature, pressure=0, cores=1,
                                 n_equilibration_steps=15000,
