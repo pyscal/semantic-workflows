@@ -326,3 +326,75 @@ def calculate_elastic_constants(structure, pair_style, pair_coeff, cores=1,
                'Shear_modulus2': G2,
                'Poisson_ratio': poisson}
     return results
+
+
+@as_function_node
+def compression_test(structure, pair_style, 
+                     pair_coeff, cores=1,
+                     temperature=10,
+                     annealing_temperature=600,
+                     n_equilibration_steps=5000,
+                     n_run_steps=10000,
+                     strain_rate=1e-5):
+
+    import numpy as np
+    from ase.io import write
+    write('tmp.data', structure, format='lammps-data')
+
+    lmp = LammpsLibrary(cores=cores)
+    lmp.command("units metal") 
+    lmp.command("dimension 3") 
+    lmp.command("boundary p p p") 
+    lmp.command("atom_style atomic")
+    lmp.command("read_data tmp.data")
+    lmp.command(f"pair_style {pair_style}")
+    lmp.command(f"pair_coeff {pair_coeff}")
+
+    #anneal the grains
+    lmp.command(f"velocity        all create {temperature} {np.random.randint(10000)} mom yes rot yes dist gaussian")
+
+    lmp.command(f"fix 2 all temp/rescale 1 {temperature} {annealing_temperature} 1.0 1.0")
+    lmp.command(f"fix 3 all nph x 0.0 0.0 0.1 y 0.0 0.0 0.1 z 0.0 0.0 0.1 drag 1.0 nreset 1000")
+
+    lmp.command(f"run {n_equilibration_steps}")
+    lmp.command("unfix 2")
+    lmp.command("unfix 3")
+
+    lmp.command(f"fix 2 all temp/rescale 1 {annealing_temperature} {annealing_temperature} 1.0 1.0")
+    lmp.command(f"fix 3 all nph x 0.0 0.0 0.1 y 0.0 0.0 0.1 z 0.0 0.0 0.1 drag 1.0 nreset 1000")
+    lmp.command(f"run {n_equilibration_steps}")
+    lmp.command("unfix 2")
+    lmp.command("unfix 3")
+
+    lmp.command(f"fix 2 all temp/rescale 1 {annealing_temperature} {temperature} 1.0 1.0")
+    lmp.command(f"fix 3 all nph x 0.0 0.0 0.1 y 0.0 0.0 0.1 z 0.0 0.0 0.1 drag 1.0 nreset 1000")
+    lmp.command(f"variable runing equal \"20/v_ts\"")
+    lmp.command(f"run {n_equilibration_steps}")
+    lmp.command("unfix 2")
+    lmp.command("unfix 3")
+
+    lmp.command("variable L0x equal lx")
+    lmp.command("variable L0y equal ly")
+    lmp.command("variable L0z equal lz")
+
+    lmp.command("variable strainx equal \"(lx - v_L0x)/v_L0x\"")
+    lmp.command("variable strainy equal \"(ly - v_L0y)/v_L0y\"")
+    lmp.command("variable strainz equal \"(lz - v_L0z)/v_L0z\"")
+    lmp.command("variable p1x equal \"-v_strainx*100\"")
+    lmp.command("variable p1y equal \"-v_strainy*100\"")
+    lmp.command("variable p1z equal \"-v_strainz*100\"")
+
+    lmp.command("reset_timestep  0")
+    lmp.command("compute         stress all stress/atom NULL")
+    lmp.command("compute         peratom all pe/atom")
+
+    lmp.command("dump myDump all custom 7500 dump.* id type x y z c_peratom c_stress[1] c_stress[2] c_stress[3] c_stress[4] c_stress[5] c_stress[6]")
+
+
+    lmp.command("fix 2 all nve")
+    lmp.command(f"fix 3 all deform 1 x erate {strain_rate} y erate {strain_rate} z erate {strain_rate}")
+
+    lmp.command("fix def1 all print 100 \"$(temp), $(press), $(enthalpy), $(pe), ${p1x}, ${p1y}, ${p1z}\" append quantities.dat screen no")
+    lmp.command("fix def2 all print 100 \"$(pxx), $(pyy), $(pzz), $(xy), $(xz), $(yz), ${p1x}, ${p1y}, ${p1z}\" append pressure.dat screen no")
+
+    lmp.command(f"run {n_run_steps}")
