@@ -10,39 +10,14 @@ from collections import Counter
 import random
 import string
 import copy
+from .templates import sample_template as template_dict 
 
 def generate_id(length=7):
     """Generate a random alphanumeric ID of given length."""
     chars = string.ascii_letters + string.digits  # A–Z, a–z, 0–9
     return ''.join(random.choices(chars, k=length))
 
-template_dict = {
-    "id": "sample1",
-    "material": {
-        "element_ratio": {},
-        "crystal_structure": {
-            "spacegroup_symbol": None,
-            "spacegroup_number": None,
-            "unit_cell": {
-                "bravais_lattice": None,
-                "lattice_parameter": None,
-                "angle": []
-            }
-        }
-    },
-    "simulation_cell": {
-        "volume": {'value': None},
-        "number_of_atoms": None,
-        "length": [],
-        "vector": [],
-        "angle": [],
-        "repetitions": []
-    },
-    'atom_attribute': {
-        'position': None,
-        'species': None,
-    }
-}
+
 
 @as_function_node
 def bulk(

@@ -5,11 +5,12 @@ from ase.io import read, write
 from pylammpsmpi import LammpsLibrary
 from pyiron_workflow import as_function_node
 from .build import update_attributes
+from .templates import property_template, workflow_template
 
 @as_function_node
 def calculate_ev_curves(structure, pair_style, pair_coeff, vol_range=0.3, num_of_points=5, cores=1, 
                     e_tol=0, f_tol=0.0001, n_energy_steps=1e5, n_force_steps=1e6,
-                    kg=None):
+                    kg=None, potential_type=None, potential_doi=None):
     
     #relax structure first
     #vol = relax_structure(structure, pair_style, pair_coeff, cores=cores, 
@@ -43,8 +44,57 @@ def calculate_ev_curves(structure, pair_style, pair_coeff, vol_range=0.3, num_of
         scaling = final_volume/initial_volume
         final_structure = scale_atoms(structure, scaling)
         #a new structure is created and data is added!
-        _ = update_attributes(final_structure, kg, create_new=True)
+        final_structure = update_attributes(final_structure, kg, create_new=True)
+
+        #add workflow details
+        # Add workflow details
+        workflow = workflow_template.copy()
         
+        workflow['method'] = 'MolecularStatics'
+        workflow['algorithm'] = 'EquationOfStateFit'
+        workflow['input_sample'] = [structure.info['id']]
+        
+        new_id = final_structure.info['id']
+        workflow['output_sample'] = [new_id]
+        
+        outputs = [
+            {
+                "label": "EquilibriumEnergy",
+                "value": np.round(E0, decimals=4),
+                "unit": "EV",
+                "associate_to_sample": [new_id],
+                "basename": "TotalEnergy",
+            },
+            {
+                "label": "EquilibriumVolume",
+                "value": np.round(V0, decimals=4),
+                "unit": "ANGSTROM3",
+                "associate_to_sample": [new_id],
+                "basename": "Volume",
+            },
+            {
+                "label": "BulkModulus",
+                "basename": "BulkModulus",
+                "value": np.round(B0, decimals=2),
+                "unit": "GigaPA",
+                "associate_to_sample": [new_id],
+            },
+        ]
+        
+        workflow['thermodynamic_ensemble'] = 'MicrocanonicalEnsemble'
+        workflow['degrees_of_freedom'] = ["AtomicPositionRelaxation"]
+        workflow['calculated_property'] = outputs
+        workflow['interatomic_potential'] = {
+            'potential_type': potential_type,
+            'uri': potential_doi,
+        }
+        workflow['software'] = {
+            'uri': "https://doi.org/10.1016/j.cpc.2021.108171",
+            'label': 'LAMMPS',
+        }
+        
+        # Append a *copy* to avoid overwriting in subsequent iterations
+        kg['workflow'].append(workflow.copy())
         
     return datadict
 
