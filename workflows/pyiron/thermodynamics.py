@@ -77,6 +77,7 @@ def calphy_default_input():
         "spring_constants": None,
         "equilibration_control": "nose-hoover",
         "melting_cycle": True,
+        "folder_prefix": 'calc',
         "md": {
             "timestep": 0.001,
             "n_small_steps": 10000,
@@ -120,7 +121,8 @@ def _prepare_input(pair_style, pair_coeff, structure,
                    temperature, pressure=0,
                    n_switching_steps=10000,
                    mode='fe', reference_phase='solid',
-                   cores =1, 
+                   cores =1,
+                   folder_prefix='calc',
                    input_dict=None):
     from calphy.input import Calculation
     import os
@@ -150,11 +152,13 @@ def _prepare_input(pair_style, pair_coeff, structure,
     input_dict['pressure'] = pressure
     input_dict['n_switching_steps'] = n_switching_steps
     input_dict['n_equilibration_steps'] = n_switching_steps//2
+    #input_dict['folder_prefix'] = folder_prefix,
     
     if cores > 1:
         input_dict["queue"]["cores"] = cores
 
     calc = Calculation(**input_dict)
+    calc.folder_prefix = folder_prefix
     return calc
 
 
@@ -173,6 +177,7 @@ def calculate_free_energy(
                    n_switching_steps=10000,
                    mode='fe', reference_phase='solid',
                    cores =1, 
+                   folder_prefix='calc',
                    input_dict=None
 ):
     from calphy.solid import Solid
@@ -181,7 +186,7 @@ def calculate_free_energy(
     import os
     import numpy as np
 
-    calc = _prepare_input(pair_style, pair_coeff, structure, temperature, pressure, n_switching_steps, mode, reference_phase, cores, input_dict)
+    calc = _prepare_input(pair_style, pair_coeff, structure, temperature, pressure, n_switching_steps, mode, reference_phase, cores, folder_prefix, input_dict)
 
     simfolder = calc.create_folders()
     if reference_phase == 'solid':
