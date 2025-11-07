@@ -9,6 +9,7 @@ import spglib
 from collections import Counter
 import random
 import string
+import copy
 
 def generate_id(length=7):
     """Generate a random alphanumeric ID of given length."""
@@ -114,7 +115,7 @@ def repeat(
 
     structure = structure.repeat(repetitions)
     if kg is not None:
-        update_attributes(structure, kg, repeat=repetitions)
+        structure = update_attributes(structure, kg, repeat=repetitions)
     return structure
 
 @as_function_node
@@ -677,7 +678,7 @@ def _compute_structure_metadata(name, crystalstructure, a, b, c, covera):
 
     return sdict
 
-def update_attributes(atoms, kg, repeat=None):
+def update_attributes(atoms, kg, repeat=None, create_new=False):
     """
     Update the atom attributes based on the provided ASE Atoms object.
     This would also reset the id, since the structure has changed.
@@ -688,6 +689,12 @@ def update_attributes(atoms, kg, repeat=None):
     for d in kg['computational_sample']:
         if d['id'] == id:
             data = d
+
+    if create_new:
+        data = copy.deepcopy(data)
+        data['id'] = generate_id()
+        atoms = atoms.copy()
+        atoms.info['id'] = data['id']
     
     data["material"]["element_ratio"] = get_chemical_composition(atoms)
     data["simulation_cell"]["volume"]["value"] = get_cell_volume(atoms)
@@ -704,3 +711,8 @@ def update_attributes(atoms, kg, repeat=None):
     
     data["atom_attribute"]["position"] = atoms.get_positions().tolist()
     data["atom_attribute"]["species"] = atoms.get_chemical_symbols()
+
+    if create_new:
+        kg['computational_sample'].append(data)
+        
+    return atoms

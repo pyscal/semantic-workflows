@@ -4,10 +4,12 @@ from scipy.optimize import curve_fit
 from ase.io import read, write
 from pylammpsmpi import LammpsLibrary
 from pyiron_workflow import as_function_node
+from .build import update_attributes
 
 @as_function_node
 def calculate_ev_curves(structure, pair_style, pair_coeff, vol_range=0.3, num_of_points=5, cores=1, 
-                    e_tol=0, f_tol=0.0001, n_energy_steps=1e5, n_force_steps=1e6):
+                    e_tol=0, f_tol=0.0001, n_energy_steps=1e5, n_force_steps=1e6,
+                    kg=None):
     
     #relax structure first
     #vol = relax_structure(structure, pair_style, pair_coeff, cores=cores, 
@@ -17,6 +19,9 @@ def calculate_ev_curves(structure, pair_style, pair_coeff, vol_range=0.3, num_of
     
     energies = []
     volumes = []
+    initial_cell = structure.get_cell()
+    initial_volume = structure.get_volume()
+    
     for volume_factor in volume_factors:
         scaled_atoms = scale_atoms(structure, volume_factor)
         e, v = calculate_energy(scaled_atoms, pair_style, pair_coeff, cores=cores, 
@@ -30,6 +35,17 @@ def calculate_ev_curves(structure, pair_style, pair_coeff, vol_range=0.3, num_of
     e_fit = birch_murnaghan_eval(v_fit, V0, E0, B0, Bp)
     bulk_modulus = B0*160.2176621
     datadict = {'energy': e_fit, 'volume': v_fit, 'bulk_modulus': bulk_modulus}
+
+    #ALL THINGS THAT NEED TO BE DONE IF KG IS NOT NONE:
+    if kg is not None:
+        #create a scaled structure with right scale
+        final_volume = V0*len(structure)
+        scaling = final_volume/initial_volume
+        final_structure = scale_atoms(structure, scaling)
+        #a new structure is created and data is added!
+        _ = update_attributes(final_structure, kg, create_new=True)
+        
+        
     return datadict
 
 
