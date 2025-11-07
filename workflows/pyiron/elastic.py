@@ -4,6 +4,7 @@ from scipy.optimize import curve_fit
 from ase.io import read, write
 from pylammpsmpi import LammpsLibrary
 from pyiron_workflow import as_function_node
+from .templates import property_template, workflow_template
 
 def _displace(lmp, dir, pair_style, pair_coeff):
     if dir == 1:
@@ -134,7 +135,9 @@ def calculate_elastic_constants(structure, pair_style, pair_coeff, cores=1,
         finite_deformation_size=1e-6,
         energy_tolerance=0.0,
         force_tolerance=1.0e-15,
-        max_iterations=100,):
+        max_iterations=100,
+        kg = None,
+        potential_type=None, potential_doi=None):
 
     write('tmp.data', structure, format='lammps-data')
     lmp = LammpsLibrary(cores=cores)
@@ -319,6 +322,66 @@ def calculate_elastic_constants(structure, pair_style, pair_coeff, cores=1,
     G2 = lmp.extract_variable("shearmodulus2", None, 0)
     poisson = lmp.extract_variable("poissonratio", None, 0)
 
+    c_matrix = np.array([[c11, c12, c13, c14, c15, c16],
+                         [c12, c22, c23, c24, c25, c26],
+                         [c13, c23, c33, c34, c35, c36],
+                         [c14, c24, c34, c44, c45, c46],
+                         [c15, c25, c35, c45, c55, c56],
+                         [c16, c26, c36, c46, c56, c66]])
+    
+    if kg is not None:
+        workflow = workflow_template.copy()
+        workflow['method'] = 'MolecularStatics'
+        workflow['input_sample'] = [structure.info['id']]
+        sample_id = structure.info['id']
+        
+        outputs = [
+            {"label": "C11", "value": c_matrix[0, 0], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C12", "value": c_matrix[0, 1], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C13", "value": c_matrix[0, 2], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C14", "value": c_matrix[0, 3], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C15", "value": c_matrix[0, 4], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C16", "value": c_matrix[0, 5], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+        
+            {"label": "C22", "value": c_matrix[1, 1], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C23", "value": c_matrix[1, 2], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C24", "value": c_matrix[1, 3], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C25", "value": c_matrix[1, 4], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C26", "value": c_matrix[1, 5], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+        
+            {"label": "C33", "value": c_matrix[2, 2], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C34", "value": c_matrix[2, 3], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C35", "value": c_matrix[2, 4], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C36", "value": c_matrix[2, 5], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+        
+            {"label": "C44", "value": c_matrix[3, 3], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C45", "value": c_matrix[3, 4], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C46", "value": c_matrix[3, 5], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+        
+            {"label": "C55", "value": c_matrix[4, 4], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "C56", "value": c_matrix[4, 5], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+        
+            {"label": "C66", "value": c_matrix[5, 5], "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ElasticConstant"},
+            {"label": "BulkModulus", "value": B, "unit": "GPa", "associate_to_sample": [sample_id], "basename": "BulkModulus"},
+            {"label": "ShearModulus", "value": G1, "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ShearModulus"},
+            {"label": "ShearModulus", "value": G2, "unit": "GPa", "associate_to_sample": [sample_id], "basename": "ShearModulus"},
+            {"label": "PoissonRation", "value": poisson, "associate_to_sample": [sample_id], "basename": "PoissonRatio"},
+        ]
+        
+        workflow['degrees_of_freedom'] = ["AtomicPositionRelaxation"]
+        workflow['calculated_property'] = outputs
+        workflow['interatomic_potential'] = {
+            'potential_type': potential_type,
+            'uri': potential_doi,
+        }
+        workflow['software'] = {
+            'uri': "https://doi.org/10.1016/j.cpc.2021.108171",
+            'label': 'LAMMPS',
+        }
+        
+        # Append a *copy* to avoid overwriting in subsequent iterations
+        kg['workflow'].append(workflow.copy())
+    
     results = {'C_matrix': c_matrix,
                'Bulk_modulus': B,
                'Shear_modulus1': G1,
