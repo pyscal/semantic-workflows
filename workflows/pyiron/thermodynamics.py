@@ -87,8 +87,22 @@ def calculate_thermal_properties(structure, pair_style, pair_coeff,
         workflow['input_sample'] = [structure.info['id']]
         new_id = final_structure.info['id']
         workflow['output_sample'] = [new_id]
-
-       outputs = [
+        inputs = [
+            {
+                "basename": "Temperature",
+                "label": "Temperature",
+                "value": temperature,
+                "unit": "K",
+            },
+            {
+                "basename": "Pressure",
+                "label": "Pressure",
+                "value": pressure,
+                "unit": "GigaPA",
+            }
+        ]
+        workflow['input_parameter'] = inputs
+        outputs = [
             {
                 "label": "SpecificHeat",
                 "value": cp,
@@ -244,7 +258,8 @@ def calculate_free_energy(
                    mode='fe', reference_phase='solid',
                    cores =1, 
                    folder_prefix='calc',
-                   input_dict=None
+                   input_dict=None,
+                   kg=None, potential_type=None, potential_doi=None,
 ):
     from calphy.solid import Solid
     from calphy.liquid import Liquid
@@ -280,12 +295,91 @@ def calculate_free_energy(
         temp, fe = np.loadtxt(outfile, unpack=True, usecols=(0,1))
         results['temperature'] = temp
         results['free_energy'] = fe
+        pres = pressure
     elif mode == 'pscale':
         outfile = os.path.join(simfolder, "pressure_sweep.dat")
         pres, fe = np.loadtxt(outfile, unpack=True, usecols=(0,1))
         results['pressure'] = pres
         results['free_energy'] = fe
+        temp = temperature
 
+    if kg is not None:
+        final_structure = read(os.path.join(simfolder, 'conf.equilibration.data'), format='lammps-data',
+                              atom_style='atomic')
+        final_structure.info['id'] = structure.info['id']
+        final_structure = update_attributes(final_structure, kg, create_new=True)
+
+        workflow = workflow_template.copy()
+        
+        workflow['method'] = 'MolecularDynamics'
+        workflow['algorithm'] = 'ThermodynamicIntegration'
+        workflow['input_sample'] = [structure.info['id']]
+        new_id = final_structure.info['id']
+        workflow['output_sample'] = [new_id]
+        inputs = [
+            {
+                "basename": "Temperature",
+                "label": "Temperature",
+                "value": temperature,
+                "unit": "K",
+            },
+            {
+                "basename": "Pressure",
+                "label": "Pressure",
+                "value": pressure,
+                "unit": "GigaPA",
+            }
+        ]
+        workflow['input_parameter'] = inputs
+        outputs = []
+        outputs.append(
+            {
+                "label": "FreeEnergy",
+                "basename": "FreeEnergy",
+                "value": fe,
+                "unit": "EV",
+                "associate_to_sample": [new_id],
+            }
+        )
+        outputs.append(
+            {
+                "label": "VirialPressure",
+                "basename": "VirialPressure",
+                "value": pres,
+                "unit": "GigaPA",
+                "associate_to_sample": [new_id],
+            }
+        )
+        outputs.append(
+            {
+                "label": "Temperature",
+                "basename": "Temperature",
+                "value": temp,
+                "unit": "K",
+                "associate_to_sample": [new_id],
+            }
+        )  
+        
+        workflow['thermodynamic_ensemble'] = 'IsothermalIsobaricEnsemble'
+        workflow['degrees_of_freedom'] = ["AtomicPositionRelaxation", "CellVolumeRelaxation", "CellShapeRelaxation"]
+        workflow['calculated_property'] = outputs
+        workflow['interatomic_potential'] = {
+            'potential_type': potential_type,
+            'uri': potential_doi,
+        }
+        software1 = {
+            "uri": "https://doi.org/10.1016/j.cpc.2021.108171",
+            "label": "LAMMPS",
+        }
+        software2 = {
+            "uri": "https://doi.org/10.5281/zenodo.10527452",
+            "label": "Calphy",
+        }
+        workflow['software'] = [software1, software2]
+        
+        # Append a *copy* to avoid overwriting in subsequent iterations
+        kg['workflow'].append(workflow.copy())
+ 
     return results
 
 
