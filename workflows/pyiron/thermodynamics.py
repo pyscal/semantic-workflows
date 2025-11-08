@@ -4,12 +4,16 @@ from pylammpsmpi import LammpsLibrary
 import scipy.constants as sc
 import numpy as np
 from pyiron_workflow import as_function_node
+from .build import update_attributes
+from .templates import property_template, workflow_template
+
 
 @as_function_node
 def calculate_thermal_properties(structure, pair_style, pair_coeff, 
                                 temperature, pressure=0, cores=1,
                                 n_equilibration_steps=15000,
-                                n_run_steps=25000):
+                                n_run_steps=25000,
+                                kg=None, potential_type=None, potential_doi=None):
     
     ev_to_j = sc.physical_constants["electron volt-joule relationship"][0]
     Av =  sc.physical_constants["Avogadro constant"][0]
@@ -43,8 +47,17 @@ def calculate_thermal_properties(structure, pair_style, pair_coeff,
     lmp.fix("1 all npt temp", T, T, 0.1, "iso", 0.0, 0.0, 0.1)
     lmp.run(n_equilibration_steps)
     lmp.fix("extra all print 100 \" $(pe) $(ke) $(etotal) $(press) $(vol) $(temp)\" file data.dat screen no")
-
+    
     lmp.run(n_run_steps)
+
+    #make it dump once
+    filename = 'tmp.dump'
+    lmp.command(
+        "dump              2x all custom 1 %s id type mass x y z vx vy vz"
+        % (filename)
+    )
+    lmp.command("run               0")
+    lmp.command("undump            2x")
 
     pe, ke, etotal, press, vol, temp = np.loadtxt("data.dat", unpack=True)
     efluct = etotal - np.mean(etotal)
@@ -60,6 +73,59 @@ def calculate_thermal_properties(structure, pair_style, pair_coeff,
     crossfluct = (efluct*ev_to_j)*(vol - np.mean(vol))
     ap = np.mean(crossfluct)/(kB*T*T*np.mean(vol)) #1/K
 
+    if kg is not None:
+        #read dump system and update
+        #input temp and press
+        #add outputs - associate to sample
+        final_structure = read('tmp.dump', format='lammps-dump-text')
+        final_structure.info['id'] = structure.info['id']
+        final_structure = update_attributes(final_structure, kg, create_new=True)
+
+        workflow = workflow_template.copy()
+        
+        workflow['method'] = 'MolecularDynamics'
+        workflow['input_sample'] = [structure.info['id']]
+        new_id = final_structure.info['id']
+        workflow['output_sample'] = [new_id]
+
+       outputs = [
+            {
+                "label": "SpecificHeat",
+                "value": cp,
+                "unit": "J-PER-GM-K",
+                "associate_to_sample": [new_id],
+                "basename": "SpecificHeat",
+            },
+            {
+                "label": "EquilibriumVolume",
+                "value": np.round(np.mean(vol), decimals=4),
+                "unit": "ANGSTROM3",
+                "associate_to_sample": [new_id],
+                "basename": "Volume",
+            },
+            {
+                "label": "ThermalExpansionCoefficient",
+                "basename": "ThermalExpansionCoefficient",
+                "value": ap,
+                "associate_to_sample": [new_id],
+            },
+        ]    
+        
+        workflow['thermodynamic_ensemble'] = 'IsothermalIsobaricEnsemble'
+        workflow['degrees_of_freedom'] = ["AtomicPositionRelaxation", "CellVolumeRelaxation", "CellShapeRelaxation"]
+        workflow['calculated_property'] = outputs
+        workflow['interatomic_potential'] = {
+            'potential_type': potential_type,
+            'uri': potential_doi,
+        }
+        workflow['software'] = {
+            'uri': "https://doi.org/10.1016/j.cpc.2021.108171",
+            'label': 'LAMMPS',
+        }
+        
+        # Append a *copy* to avoid overwriting in subsequent iterations
+        kg['workflow'].append(workflow.copy())
+  
     results = {'specific_heat': cp, 'thermal_expansion': ap, 'volume': np.mean(vol),}
     return results
 
