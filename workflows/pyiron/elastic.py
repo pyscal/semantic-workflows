@@ -390,72 +390,198 @@ def calculate_elastic_constants(structure, pair_style, pair_coeff, cores=1,
     return results
 
 @as_function_node
-def compression_test(structure, pair_style, 
-                     pair_coeff, cores=1,
-                     temperature=10,
-                     annealing_temperature=600,
-                     n_equilibration_steps=5000,
-                     n_run_steps=10000,
-                     strain_rate=1e-5):
+def compression_test(
+    structure,
+    pair_style,
+    pair_coeff,
+    mode="hydrostatic",          # "hydrostatic" or "uniaxial"
+    cores=1,
+    temperature=10,
+    annealing_temperature=600,
+    n_equilibration_steps=5000,
+    n_run_steps=10000,
+    strain_rate=1e-5,
+    dump_interval=1000,           # dump trajectory every N steps
+    kg=None, potential_type=None, potential_doi=None,
+):
 
-    import numpy as np
-    from ase.io import write
-    write('tmp.data', structure, format='lammps-data')
+    # --- Write structure to LAMMPS data file
+    write("tmp.data", structure, format="lammps-data")
 
+    # --- Initialize LAMMPS
     lmp = LammpsLibrary(cores=cores)
-    lmp.command("units metal") 
-    lmp.command("dimension 3") 
-    lmp.command("boundary p p p") 
+    lmp.command("units metal")
+    lmp.command("dimension 3")
+    lmp.command("boundary p p p")
     lmp.command("atom_style atomic")
     lmp.command("read_data tmp.data")
     lmp.command(f"pair_style {pair_style}")
     lmp.command(f"pair_coeff {pair_coeff}")
 
-    #anneal the grains
-    lmp.command(f"velocity        all create {temperature} {np.random.randint(10000)} mom yes rot yes dist gaussian")
+    # ------------------------
+    # Equilibration and annealing
+    # ------------------------
+    lmp.command(f"velocity all create {temperature} {np.random.randint(10000)} mom yes rot yes dist gaussian")
 
-    lmp.command(f"fix 2 all temp/rescale 1 {temperature} {annealing_temperature} 1.0 1.0")
-    lmp.command(f"fix 3 all nph x 0.0 0.0 0.1 y 0.0 0.0 0.1 z 0.0 0.0 0.1 drag 1.0 nreset 1000")
+    for T1, T2 in [
+        (temperature, annealing_temperature),
+        (annealing_temperature, annealing_temperature),
+        (annealing_temperature, temperature),
+    ]:
+        lmp.command(f"fix 2 all temp/rescale 1 {T1} {T2} 1.0 1.0")
+        lmp.command(f"fix 3 all nph x 0.0 0.0 0.1 y 0.0 0.0 0.1 z 0.0 0.0 0.1 drag 1.0 nreset 1000")
+        lmp.command(f"run {n_equilibration_steps}")
+        lmp.command("unfix 2")
+        lmp.command("unfix 3")
 
-    lmp.command(f"run {n_equilibration_steps}")
-    lmp.command("unfix 2")
-    lmp.command("unfix 3")
+    lmp.command("reset_timestep 0")
 
-    lmp.command(f"fix 2 all temp/rescale 1 {annealing_temperature} {annealing_temperature} 1.0 1.0")
-    lmp.command(f"fix 3 all nph x 0.0 0.0 0.1 y 0.0 0.0 0.1 z 0.0 0.0 0.1 drag 1.0 nreset 1000")
-    lmp.command(f"run {n_equilibration_steps}")
-    lmp.command("unfix 2")
-    lmp.command("unfix 3")
+    # ------------------------
+    # Define stress computation
+    # ------------------------
+    lmp.command("compute stress all pressure NULL virial")
+    lmp.variable("sigmaxx equal c_stress[1]")
+    lmp.variable("sigmayy equal c_stress[2]")
+    lmp.variable("sigmazz equal c_stress[3]")
 
-    lmp.command(f"fix 2 all temp/rescale 1 {annealing_temperature} {temperature} 1.0 1.0")
-    lmp.command(f"fix 3 all nph x 0.0 0.0 0.1 y 0.0 0.0 0.1 z 0.0 0.0 0.1 drag 1.0 nreset 1000")
-    lmp.command(f"variable runing equal \"20/v_ts\"")
-    lmp.command(f"run {n_equilibration_steps}")
-    lmp.command("unfix 2")
-    lmp.command("unfix 3")
+    # ------------------------
+    # Deformation setup (NPH, no thermostat)
+    # ------------------------
+    if mode == "hydrostatic":
+        lmp.command("fix int all nph iso 0.0 0.0 1.0")
+        lmp.command(
+            f"fix def all deform 1 x erate {strain_rate} y erate {strain_rate} z erate {strain_rate} units box remap x"
+        )
 
-    lmp.command("variable L0x equal lx")
-    lmp.command("variable L0y equal ly")
-    lmp.command("variable L0z equal lz")
+    elif mode == "uniaxial":
+        lmp.command("fix int all nph x 0.0 0.0 1.0 y 0.0 0.0 1.0")
+        lmp.command(
+            f"fix def all deform 1 z erate {strain_rate} units box remap x"
+        )
 
-    lmp.command("variable strainx equal \"(lx - v_L0x)/v_L0x\"")
-    lmp.command("variable strainy equal \"(ly - v_L0y)/v_L0y\"")
-    lmp.command("variable strainz equal \"(lz - v_L0z)/v_L0z\"")
-    lmp.command("variable p1x equal \"-v_strainx*100\"")
-    lmp.command("variable p1y equal \"-v_strainy*100\"")
-    lmp.command("variable p1z equal \"-v_strainz*100\"")
+    else:
+        raise ValueError("mode must be 'hydrostatic' or 'uniaxial'")
 
-    lmp.command("reset_timestep  0")
-    lmp.command("compute         stress all stress/atom NULL")
-    lmp.command("compute         peratom all pe/atom")
+    # ------------------------
+    # Output stresses and box dimensions
+    # ------------------------
+    lmp.command(
+        'fix out all print 100 "$(lx) $(ly) $(lz) ${sigmaxx} ${sigmayy} ${sigmazz}" '
+        'file stress.dat screen no'
+    )
 
-    lmp.command("dump myDump all custom 7500 dump.* id type x y z c_peratom c_stress[1] c_stress[2] c_stress[3] c_stress[4] c_stress[5] c_stress[6]")
+    # ------------------------
+    # Dump trajectory periodically + once at end
+    # ------------------------
+    lmp.command(f"dump traj all custom {dump_interval} dump.lammpstrj id type x y z")
+    lmp.command("dump_modify traj sort id")
+    lmp.command(f"dump final all custom {n_run_steps} final.lammpstrj id type x y z")
 
-
-    lmp.command("fix 2 all nve")
-    lmp.command(f"fix 3 all deform 1 x erate {strain_rate} y erate {strain_rate} z erate {strain_rate}")
-
-    lmp.command("fix def1 all print 100 \"$(temp), $(press), $(enthalpy), $(pe), ${p1x}, ${p1y}, ${p1z}\" append quantities.dat screen no")
-    lmp.command("fix def2 all print 100 \"$(pxx), $(pyy), $(pzz), $(xy), $(xz), $(yz), ${p1x}, ${p1y}, ${p1z}\" append pressure.dat screen no")
-
+    # ------------------------
+    # Run deformation
+    # ------------------------
     lmp.command(f"run {n_run_steps}")
+
+    # ------------------------
+    # Clean up
+    # ------------------------
+    lmp.command("unfix int")
+    lmp.command("unfix def")
+    lmp.command("unfix out")
+    lmp.command("undump traj")
+    lmp.command("undump final")
+    lmp.close()
+
+    #read and process data
+    lx, ly, lz, sx, sy, sz = np.loadtxt('stress.dat', unpack=True)
+    ex = (lx -lx[0])/lx[0]
+    ey = (ly -ly[0])/ly[0]
+    ez = (lz -lz[0])/lz[0]
+    e = (ex+ey+ez)/3
+    sigmax = -1*0.0001*sx
+    sigmay = -1*0.0001*sy
+    sigmaz = -1*0.0001*sz
+    sh = (sigmax+sigmay+sigmaz)/3
+
+    #now process our data
+    if kg is not None:
+        final_structure = read(os.path.join(simfolder, 'final.lammpstrj'), format='lammps-dump-text')
+        final_structure.info['id'] = structure.info['id']
+        final_structure = update_attributes(final_structure, kg, create_new=True)
+
+        workflow = workflow_template.copy()
+        workflow['method'] = 'MolecularDynamics'
+        if strain_rate < 0:
+            if mode == 'hydrostatic':
+                workflow['algorithm'] = 'HydrostaticCompression'
+            else:
+                workflow['algorithm'] = 'UniaxialCompression'
+        else:
+            if mode == 'hydrostatic':
+                workflow['algorithm'] = 'HydrostaticTension'
+            else:
+                workflow['algorithm'] = 'UniaxialTension'
+            
+        workflow['input_sample'] = [structure.info['id']]
+        new_id = final_structure.info['id']
+        workflow['output_sample'] = [new_id]
+        inputs = [
+            {
+                "basename": "Temperature",
+                "label": "Temperature",
+                "value": temperature,
+                "unit": "K",
+            },
+            {
+                "basename": "StrainRate",
+                "label": "StrainRate",
+                "value": strain_rate,
+                "unit": "perS",
+            }
+        ]
+        workflow['input_parameter'] = inputs
+        outputs = []
+        outputs.append(
+            {
+                "label": "Stress",
+                "basename": "Stress",
+                "value": sh if mode=='hydrostatic' else sigmaz,
+                "unit": "GPa",
+                "associate_to_sample": [new_id],
+            }
+        )
+        outputs.append(
+            {
+                "label": "EngineeringStrain",
+                "basename": "Strain",
+                "value": e if mode=='hydrostatic' else ez,
+                "unit": "GigaPA",
+                "associate_to_sample": [new_id],
+            }
+        )        
+        workflow['thermodynamic_ensemble'] = 'MicrocanonicalEnsemble'
+        if mode == 'hydrostatic':
+            workflow['degrees_of_freedom'] = ["AtomicPositionRelaxation", "CellVolumeRelaxation"]
+        else:
+            workflow['degrees_of_freedom'] = ["AtomicPositionRelaxation", "CellVolumeRelaxation", "CellShapeRelaxation"]
+        workflow['calculated_property'] = outputs
+        workflow['interatomic_potential'] = {
+            'potential_type': potential_type,
+            'uri': potential_doi,
+        }
+        software1 = {
+            "uri": "https://doi.org/10.1016/j.cpc.2021.108171",
+            "label": "LAMMPS",
+        }
+        workflow['software'] = [software1]
+        
+        # Append a *copy* to avoid overwriting in subsequent iterations
+        kg['workflow'].append(workflow.copy())
+        
+    if mode == 'hydrostatic':
+        strain = e
+        stress = sh
+    elif mode == 'uniaxial':
+        strain = ez
+        stress = sigmaz
+    return strain, stress

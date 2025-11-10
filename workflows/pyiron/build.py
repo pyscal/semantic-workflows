@@ -82,7 +82,7 @@ def bulk(
 #    return new_structure
 
 @as_function_node
-def repeat(
+def supersize(
     structure: Atoms,
     repetitions: tuple[int, int, int],
     kg = None,
