@@ -45,7 +45,7 @@ def bulk(
     )
     sdict["spacegroup_symbol"] = get_spacegroup_symbol(struct)
     sdict["spacegroup_number"] = get_spacegroup_number(struct)
-    data = _generate_atomic_sample_data(struct, sdict, repeat)
+    data = _generate_atomic_sample_data(struct, sdict, repeat=None)
     id = generate_id()
     data['id'] = id
     
@@ -82,7 +82,7 @@ def bulk(
 #    return new_structure
 
 @as_function_node
-def supersize(
+def repeat(
     structure: Atoms,
     repetitions: tuple[int, int, int],
     kg = None,
@@ -94,13 +94,20 @@ def supersize(
     return structure
 
 @as_function_node
-def polycrystal(structure: Atoms, box_size: tuple[float, float, float], grain_size: float) -> Atoms:
+def polycrystal(structure: Atoms, box_size: tuple[float, float, float], grain_size: float,
+               kg=None) -> Atoms:
     import numpy as np
     import os
     from ase.io import read
     from ase.io import write 
 
     n_grains = int((box_size[0]*box_size[1]*box_size[2])/(grain_size**3))
+
+    #calculate repeats
+    nx = np.ceil(structure.get_cell()[0]/box_size[0])
+    ny = np.ceil(structure.get_cell()[1]/box_size[1])
+    nz = np.ceil(structure.get_cell()[2]/box_size[2])
+    
     with open('grain_sizes.txt', 'w') as f:
         f.write(f"box {box_size[0]} {box_size[1]} {box_size[2]}\n")
         f.write(f"random {n_grains}\n")
@@ -113,6 +120,14 @@ def polycrystal(structure: Atoms, box_size: tuple[float, float, float], grain_si
     os.remove('grain_sizes.txt')
     os.remove('tmp.xsf')
     os.remove('final.cfg')
+
+    if kg is not None:
+        poly_struct.info['id'] = structure.info['id']
+        #update system
+        poly_struct = update_attributes(poly_struct, kg, 
+                                        repeat=(nx, ny, nz),
+                                        grains={'size': grain_size, 'number':n_grains})
+        
     return poly_struct
 
 
@@ -653,7 +668,8 @@ def _compute_structure_metadata(name, crystalstructure, a, b, c, covera):
 
     return sdict
 
-def update_attributes(atoms, kg, repeat=None, create_new=False):
+def update_attributes(atoms, kg, repeat=None, create_new=False,
+                     grains=None):
     """
     Update the atom attributes based on the provided ASE Atoms object.
     This would also reset the id, since the structure has changed.
@@ -677,7 +693,12 @@ def update_attributes(atoms, kg, repeat=None, create_new=False):
     data["simulation_cell"]["length"] = get_simulation_cell_length(atoms)
     data["simulation_cell"]["vector"] = get_simulation_cell_vector(atoms)
     data["simulation_cell"]["angle"] = get_simulation_cell_angle(atoms)
-    
+
+    if grains is not None:
+        data['simulation_cell']['grains'] = {}
+        data['simulation_cell']['grains']['size'] = grains['size']
+        data['simulation_cell']['grains']['number'] = grains['number']
+        
     if repeat is not None:
         if isinstance(repeat, int):
             data["simulation_cell"]["repetitions"] = (repeat, repeat, repeat)

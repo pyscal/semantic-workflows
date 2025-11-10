@@ -5,6 +5,9 @@ from ase.io import read, write
 from pylammpsmpi import LammpsLibrary
 from pyiron_workflow import as_function_node
 from .templates import property_template, workflow_template
+from .build import update_attributes
+import os
+
 
 def _displace(lmp, dir, pair_style, pair_coeff):
     if dir == 1:
@@ -390,7 +393,7 @@ def calculate_elastic_constants(structure, pair_style, pair_coeff, cores=1,
     return results
 
 @as_function_node
-def compression_test(
+def mechanical_response_test(
     structure,
     pair_style,
     pair_coeff,
@@ -448,7 +451,7 @@ def compression_test(
     # Deformation setup (NPH, no thermostat)
     # ------------------------
     if mode == "hydrostatic":
-        lmp.command("fix int all nph iso 0.0 0.0 1.0")
+        lmp.command("fix int all nve")
         lmp.command(
             f"fix def all deform 1 x erate {strain_rate} y erate {strain_rate} z erate {strain_rate} units box remap x"
         )
@@ -505,7 +508,7 @@ def compression_test(
 
     #now process our data
     if kg is not None:
-        final_structure = read(os.path.join(simfolder, 'final.lammpstrj'), format='lammps-dump-text')
+        final_structure = read('final.lammpstrj', format='lammps-dump-text')
         final_structure.info['id'] = structure.info['id']
         final_structure = update_attributes(final_structure, kg, create_new=True)
 
