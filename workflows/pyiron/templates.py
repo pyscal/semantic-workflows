@@ -18,7 +18,9 @@ sample_template = {
         "length": [],
         "vector": [],
         "angle": [],
-        "repetitions": []
+        "repetitions": [],
+        "grain_size": None,
+        "number_of_grains": 0,
     },
     'atom_attribute': {
         'position': None,

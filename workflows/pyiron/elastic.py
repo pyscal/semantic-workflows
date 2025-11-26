@@ -404,7 +404,7 @@ def mechanical_response_test(
     n_equilibration_steps=5000,
     n_run_steps=10000,
     strain_rate=1e-5,
-    dump_interval=1000,           # dump trajectory every N steps
+    dump_interval=10000,           # dump trajectory every N steps
     kg=None, potential_type=None, potential_doi=None,
 ):
 
@@ -510,20 +510,16 @@ def mechanical_response_test(
     if kg is not None:
         final_structure = read('final.lammpstrj', format='lammps-dump-text')
         final_structure.info['id'] = structure.info['id']
-        final_structure = update_attributes(final_structure, kg, create_new=True)
+        final_structure = update_attributes(final_structure, kg, 
+                                            create_new=True,
+                                            ignore_positions=True)
 
         workflow = workflow_template.copy()
         workflow['method'] = 'MolecularDynamics'
         if strain_rate < 0:
-            if mode == 'hydrostatic':
-                workflow['algorithm'] = 'HydrostaticCompression'
-            else:
-                workflow['algorithm'] = 'UniaxialCompression'
+            workflow['algorithm'] = 'CompressionTest'
         else:
-            if mode == 'hydrostatic':
-                workflow['algorithm'] = 'HydrostaticTension'
-            else:
-                workflow['algorithm'] = 'UniaxialTension'
+            workflow['algorithm'] = 'TensileTest'
             
         workflow['input_sample'] = [structure.info['id']]
         new_id = final_structure.info['id']

@@ -84,17 +84,17 @@ def bulk(
 @as_function_node
 def repeat(
     structure: Atoms,
-    repetitions: tuple[int, int, int],
+    repetitions,
     kg = None,
 ) -> Atoms:
 
     structure = structure.repeat(repetitions)
     if kg is not None:
-        structure = update_attributes(structure, kg, repeat=repetitions)
+        structure = update_attributes(structure, kg, repeat=list(repetitions))
     return structure
 
 @as_function_node
-def polycrystal(structure: Atoms, box_size: tuple[float, float, float], grain_size: float,
+def polycrystal(structure: Atoms, box_size, grain_size,
                kg=None) -> Atoms:
     import numpy as np
     import os
@@ -126,7 +126,9 @@ def polycrystal(structure: Atoms, box_size: tuple[float, float, float], grain_si
         #update system
         poly_struct = update_attributes(poly_struct, kg, 
                                         repeat=(nx, ny, nz),
-                                        grains={'size': grain_size, 'number':n_grains})
+                                        grain_size=grain_size, 
+                                        number_of_grains=n_grains,
+                                        ignore_positions=True)
         
     return poly_struct
 
@@ -669,7 +671,9 @@ def _compute_structure_metadata(name, crystalstructure, a, b, c, covera):
     return sdict
 
 def update_attributes(atoms, kg, repeat=None, create_new=False,
-                     grains=None):
+                     grain_size=None, number_of_grains=0, ignore_positions=False,
+                     interstitial=None, substitutional=None,
+                     vacancy=None,):
     """
     Update the atom attributes based on the provided ASE Atoms object.
     This would also reset the id, since the structure has changed.
@@ -694,20 +698,31 @@ def update_attributes(atoms, kg, repeat=None, create_new=False,
     data["simulation_cell"]["vector"] = get_simulation_cell_vector(atoms)
     data["simulation_cell"]["angle"] = get_simulation_cell_angle(atoms)
 
-    if grains is not None:
-        data['simulation_cell']['grains'] = {}
-        data['simulation_cell']['grains']['size'] = grains['size']
-        data['simulation_cell']['grains']['number'] = grains['number']
+    if grain_size is not None:
+        data['simulation_cell']['grain_size'] = grain_size
+    if number_of_grains is not None:
+        data['simulation_cell']['number_of_grains'] = number_of_grains
         
     if repeat is not None:
         if isinstance(repeat, int):
             data["simulation_cell"]["repetitions"] = (repeat, repeat, repeat)
         else:
             data["simulation_cell"]["repetitions"] = repeat
-    
-    data["atom_attribute"]["position"] = atoms.get_positions().tolist()
-    data["atom_attribute"]["species"] = atoms.get_chemical_symbols()
 
+    if not ignore_positions:
+        data["atom_attribute"]["position"] = atoms.get_positions().tolist()
+        data["atom_attribute"]["species"] = atoms.get_chemical_symbols()
+    else:
+        data["atom_attribute"]["position"] = []
+        data["atom_attribute"]["species"] = []
+
+    if interstitial is not None:
+        data['interstitial'] = interstitial
+    if substitutional is not None:
+        data['substitutional'] = substitutional
+    if vacancy is not None:
+        data['vacancy'] = vacancy
+        
     if create_new:
         kg['computational_sample'].append(data)
         

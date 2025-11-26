@@ -120,34 +120,128 @@ def birch_murnaghan_eval(vol, V0, E0, B0, Bp):
     E = E0 + 9.0*B0*V0/16.0 * (eta**2-1.0)**2 * (6.0 + Bp*(eta**2-1.0) - 4.0*eta**2)
     return E
     
-
+@as_function_node
 def relax_structure(structure, pair_style, pair_coeff, cores=1, 
-                    e_tol=0, f_tol=0.0001, n_energy_steps=1e5, n_force_steps=1e6):
+                    e_tol=0, f_tol=0.0001, n_energy_steps=1e5, n_force_steps=1e6,
+                    kg=None, potential_type=None, potential_doi=None):
+    
+    from mendeleev import element
+
+    symbols, counts = list(np.unique(structure.get_chemical_symbols(), return_counts=True))
+    masses = [element(symbol).mass for symbol in symbols]
     write('tmp.data', structure, format='lammps-data')
-    lmp = LammpsLibrary(cores=1)
+
+    initial_cell = structure.get_cell()
+    initial_volume = structure.get_volume()
+
+    lmp = LammpsLibrary(cores=cores)
     lmp.command("units metal") 
     lmp.command("dimension 3") 
     lmp.command("boundary p p p") 
     lmp.command("atom_style atomic")
     lmp.command("read_data tmp.data")
+    for x in range(len(masses)):
+        lmp.command(f"mass {x+1} {masses[x]}")
+        
     lmp.command(f"pair_style {pair_style}")
-    lmp.command(f"pair_coeff {pair_coeff}")
+
+    pair_coeff = np.atleast_1d(pair_coeff)
+    for pair in pair_coeff:
+        lmp.command(f"pair_coeff {pair}")
+
+    #lmp.command("neighbor 2.0 nsq")
+    #lmp.command("neigh_modify once no every 1 delay 0 check yes one 20000")
     lmp.command("fix ensemble all box/relax aniso 0.0")
-    lmp.command("minimize {e_tol} {f_tol} {n_energy_steps} {n_force_steps}")    
+
+    lmp.command(f"minimize {e_tol} {f_tol} {int(n_energy_steps)} {int(n_force_steps)}")
+
     lmp.command("run 0")
+    ecoh = lmp.pe/lmp.natoms
+    final_volume = lmp.vol
     vol = lmp.vol/lmp.natoms
-    return vol  
+
+    filename = 'tmp.dump'
+    lmp.command(
+        "dump              2x all custom 1 %s id type mass x y z vx vy vz"
+        % (filename)
+    )
+    lmp.command("run               0")
+    lmp.command("undump            2x")
+    
+    lmp.close()
+
+    if kg is not None:
+        #create a scaled structure with right scale
+        #scaling = final_volume/initial_volume
+        #final_structure = scale_atoms(structure, scaling)
+        #a new structure is created and data is added!
+        final_structure = read('tmp.dump', format='lammps-dump-text')
+        final_structure.info['id'] = structure.info['id']
+        final_structure = update_attributes(final_structure, kg, create_new=True)
+
+        #add workflow details
+        # Add workflow details
+        workflow = workflow_template.copy()
+        
+        workflow['method'] = 'MolecularStatics'
+        workflow['algorithm'] = 'EnergyCalculation'
+        workflow['input_sample'] = [structure.info['id']]
+        
+        new_id = final_structure.info['id']
+        workflow['output_sample'] = [new_id]
+        
+        outputs = [
+            {
+                "label": "EquilibriumEnergy",
+                "value": np.round(ecoh, decimals=4),
+                "unit": "EV",
+                "associate_to_sample": [new_id],
+                "basename": "TotalEnergy",
+            },
+            {
+                "label": "EquilibriumVolume",
+                "value": np.round(vol, decimals=4),
+                "unit": "ANGSTROM3",
+                "associate_to_sample": [new_id],
+                "basename": "Volume",
+            },
+        ]
+        
+        workflow['thermodynamic_ensemble'] = 'MicrocanonicalEnsemble'
+        workflow['degrees_of_freedom'] = ["AtomicPositionRelaxation", "CellVolumeRelaxation"]
+        workflow['calculated_property'] = outputs
+        workflow['interatomic_potential'] = {
+            'potential_type': potential_type,
+            'uri': potential_doi,
+        }
+        workflow['software'] = {
+            'uri': "https://doi.org/10.1016/j.cpc.2021.108171",
+            'label': 'LAMMPS',
+        }
+        
+        # Append a *copy* to avoid overwriting in subsequent iterations
+        kg['workflow'].append(workflow.copy())
+    return final_structure, ecoh, vol  
 
 
 def calculate_energy(structure, pair_style, pair_coeff, cores=1, 
                     e_tol=0, f_tol=0.0001, n_energy_steps=1e5, n_force_steps=1e6):
+
+    from mendeleev import element
+
+    symbols, counts = list(np.unique(structure.get_chemical_symbols(), return_counts=True))
+    masses = [element(symbol).mass for symbol in symbols]
+    
     write('tmp.data', structure, format='lammps-data')
-    lmp = LammpsLibrary(cores=1)
+    lmp = LammpsLibrary(cores=cores)
     lmp.command("units metal") 
     lmp.command("dimension 3") 
     lmp.command("boundary p p p") 
     lmp.command("atom_style atomic")
     lmp.command("read_data tmp.data")
+    for x in range(len(masses)):
+        lmp.command(f"mass {x+1} {masses[x]}")
+        
     lmp.command(f"pair_style {pair_style}")
     lmp.command(f"pair_coeff {pair_coeff}")
     lmp.command("run 0")

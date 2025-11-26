@@ -1,0 +1,61 @@
+potentials:
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1103/PhysRevB.86.144111"
+  pair_style: eam/alloy
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/Fe_Ack.eam Fe"
+  key: EAM01
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1073/pnas.2113059119"
+  pair_style: eam/fs
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/Fe_Earth_core.eam.fs Fe"
+  key: EAM02
+- potential_type: AngularDependentPotential
+  uri: "https://doi.org/10.1103/physrevmaterials.5.063607"
+  pair_style: adp
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/Fe_nmFe.2021.mod.adp.txt Fe"
+  key: EAM03
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1038/nmat3401"
+  pair_style: eam/fs
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/MCM2011_eam.fs Fe"
+  key: EAM04
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1088/0953-8984/23/20/206001"
+  pair_style: eam/alloy
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/Fe_Fe.CS3_33.alloy Fe"
+  key: EAM05
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1016/j.jnucmat.2010.05.017"
+  pair_style: eam/fs
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/M07_eam.fs Fe"
+  key: EAM06
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1016/j.commatsci.2009.06.025"
+  pair_style: eam/alloy
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/Fe_Olsson_CMS2009.eam.alloy Fe"
+  key: EAM07
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1016/j.susc.2006.02.010"
+  pair_style: eam/alloy
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/Fe_Mishin2006.eam.alloy Fe"
+  key: EAM08
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1103/physrevb.69.144113"
+  pair_style: eam/alloy
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/Fe_Zhou04.eam.alloy Fe"
+  key: EAM09
+- potential_type: EmbeddedAtomMethod
+  uri: "https://doi.org/10.1080/14786430310001613264"
+  pair_style: eam/fs
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/Fe_2.eam.fs Fe"
+  key: EAM10
+- potential_type: AtomicClusterExpansion
+  uri: "https://doi.org/10.1038/s41524-025-01574-w"
+  pair_style: pace
+  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/ACE_Fe-O.yace Fe"
+  key: ACE
+#- potential_type: GraphAtomicClusterExpansion
+#  uri: "https://doi.org/10.48550/arXiv.2508.17936"
+#  pair_style: grace
+#  pair_coeff: "* * /u/smenon/ptmp/FeC/workflows/potentials/ACE_Fe-O.yace Fe"
+#  key: GRACE
