@@ -16,12 +16,11 @@ dependencies:
   - tqdm
   - uncertainties
   - pydantic >=2.3.0
-  - pyscal3
   - pyiron_workflow
   - jobflow
   - mp-api
   - pymatgen
   - calphy
   - jupyterlab
-  - pyiron_atomistics
-  - pyiron-data
+  - pip:
+    - conceptual-dictionary
