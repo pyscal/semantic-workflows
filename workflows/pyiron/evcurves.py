@@ -184,7 +184,6 @@ def relax_structure(structure, pair_style, pair_coeff, cores=1,
         workflow = workflow_template.copy()
         
         workflow['method'] = 'MolecularStatics'
-        workflow['algorithm'] = 'EnergyCalculation'
         workflow['input_sample'] = [structure.info['id']]
         
         new_id = final_structure.info['id']
