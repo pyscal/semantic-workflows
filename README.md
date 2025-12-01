@@ -8,3 +8,5 @@ Users can run atomistic simulations using the LAMMPS molecular dynamics software
 - pyiron: used as a workflow manager
 - atomRDF: Automated semantic annotation of atomistic simulation outputs.
 - ASMO and CMSO: Standardized ontology framework for atomistic simulation and computational 
+
+![image](abstract.png)
