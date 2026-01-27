@@ -1,60 +1,35 @@
-from typing import Optional
-from ase.atoms import Atoms
-from ase.build import bulk as ase_bulk
+"""
+Jobflow-decorated structure building workflow functions.
+
+These functions import core logic from the parent workflows module and
+apply jobflow decorators.
+"""
+
 from jobflow import job
 from .utils import ase_pmg_bridge
+from .. import build as _core
+
 
 @job
 @ase_pmg_bridge
-def bulk(
-    name: str,
-    crystalstructure: Optional[str] = None,
-    a: Optional[float | int] = None,
-    c: Optional[float | int] = None,
-    c_over_a: Optional[float] | int = None,
-    u: Optional[float | int] = None,
-    orthorhombic: bool = False,
-    cubic: bool = False,
-):
+def bulk(element, **kwargs):
+    """Create bulk crystal structure (jobflow-decorated)."""
+    # Remove cdict parameter if present (not supported in jobflow)
+    kwargs.pop("cdict", None)
+    return _core.bulk(element, **kwargs)
 
-    return ase_bulk(
-        name,
-        crystalstructure=crystalstructure,
-        a=a,
-        c=c,
-        covera = c_over_a,
-        u = u,
-        orthorhombic = orthorhombic,
-        cubic = cubic,
-    )
 
 @job
 @ase_pmg_bridge
-def repeat(
-    structure: Atoms,
-    repetitions: tuple[int, int, int],
-) -> Atoms:
-    return structure.repeat(repetitions)
+def repeat(structure, rep, **kwargs):
+    """Repeat structure (jobflow-decorated)."""
+    kwargs.pop("cdict", None)
+    return _core.repeat(structure, rep, **kwargs)
+
 
 @job
 @ase_pmg_bridge
-def polycrystal(structure: Atoms, box_size: tuple[float, float, float], grain_size: float) -> Atoms:
-    import numpy as np
-    import os
-    from ase.io import read
-    from ase.io import write 
-
-    n_grains = int((box_size[0]*box_size[1]*box_size[2])/(grain_size**3))
-    with open('grain_sizes.txt', 'w') as f:
-        f.write(f"box {box_size[0]} {box_size[1]} {box_size[2]}\n")
-        f.write(f"random {n_grains}\n")
-    write('tmp.xsf', structure)
-
-
-    os.system('atomsk --polycrystal tmp.xsf grain_sizes.txt final.cfg -ow')
-    
-    poly_struct = read('final.cfg')
-    os.remove('grain_sizes.txt')
-    os.remove('tmp.xsf')
-    os.remove('final.cfg')
-    return poly_struct
+def polycrystal(element, **kwargs):
+    """Create polycrystal structure (jobflow-decorated)."""
+    kwargs.pop("cdict", None)
+    return _core.polycrystal(element, **kwargs)
