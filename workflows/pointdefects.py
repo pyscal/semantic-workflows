@@ -20,7 +20,7 @@ def create_interstitial(
     void_type,
     a=None,
     threshold=0.01,
-    kg=None,
+    cdict=None,
 ):
     if void_type == "tetrahedral":
         sys = System(atoms, format="ase")
@@ -32,10 +32,10 @@ def create_interstitial(
 
     elif void_type == "octahedral":
         # we need lattice constant, we can find this if it exists
-        if kg is not None:
+        if cdict is not None:
             data = None
             id = atoms.info["id"]
-            for d in kg["computational_sample"]:
+            for d in cdict["computational_sample"]:
                 if d["id"] == id:
                     data = d
                     break
@@ -73,7 +73,7 @@ def create_interstitial(
     new_atoms = sys.write.ase()
 
     # ok now we need to update things
-    if kg is not None:
+    if cdict is not None:
         new_atoms.info["id"] = atoms.info["id"]
 
         # add defect
@@ -83,7 +83,7 @@ def create_interstitial(
             "number": no_of_impurities,
         }
         new_atoms = update_attributes(
-            new_atoms, kg, create_new=False, interstitial=defect_record
+            new_atoms, cdict, create_new=False, interstitial=defect_record
         )
 
         # ok good, now we need to add activity
@@ -94,7 +94,7 @@ def create_interstitial(
 def create_substitutional(
     atoms,
     element,
-    kg=None,
+    cdict=None,
 ):
     species = atoms.get_chemical_symbols()
     randint = np.random.randint(len(species))
@@ -105,7 +105,7 @@ def create_substitutional(
     conc_of_impurities = no_of_impurities / len(atoms)
 
     # ok now we need to update things
-    if kg is not None:
+    if cdict is not None:
         # new_atoms.info['id'] = atoms.info['id']
 
         # add defect
@@ -114,7 +114,7 @@ def create_substitutional(
             "number": no_of_impurities,
         }
         new_atoms = update_attributes(
-            atoms, kg, create_new=False, substitutional=defect_record
+            atoms, cdict, create_new=False, substitutional=defect_record
         )
 
         # ok good, now we need to add activity

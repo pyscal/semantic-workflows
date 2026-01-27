@@ -14,8 +14,8 @@ from .. import pointdefects as _core
 @ase_pmg_bridge
 def create_interstitial(atoms, element, void_type, **kwargs):
     """Create interstitial defect (jobflow-decorated)."""
-    # Remove KG parameter (not supported in jobflow)
-    kwargs.pop("kg", None)
+    # Remove cdict parameter (not supported in jobflow)
+    kwargs.pop("cdict", None)
     return _core.create_interstitial(atoms, element, void_type, **kwargs)
 
 
@@ -23,6 +23,6 @@ def create_interstitial(atoms, element, void_type, **kwargs):
 @ase_pmg_bridge
 def create_substitutional(atoms, element, **kwargs):
     """Create substitutional defect (jobflow-decorated)."""
-    # Remove KG parameter (not supported in jobflow)
-    kwargs.pop("kg", None)
+    # Remove cdict parameter (not supported in jobflow)
+    kwargs.pop("cdict", None)
     return _core.create_substitutional(atoms, element, **kwargs)

@@ -14,8 +14,8 @@ from .. import build as _core
 @ase_pmg_bridge
 def bulk(element, **kwargs):
     """Create bulk crystal structure (jobflow-decorated)."""
-    # Remove kg parameter if present (not supported in jobflow)
-    kwargs.pop("kg", None)
+    # Remove cdict parameter if present (not supported in jobflow)
+    kwargs.pop("cdict", None)
     return _core.bulk(element, **kwargs)
 
 
@@ -23,7 +23,7 @@ def bulk(element, **kwargs):
 @ase_pmg_bridge
 def repeat(structure, rep, **kwargs):
     """Repeat structure (jobflow-decorated)."""
-    kwargs.pop("kg", None)
+    kwargs.pop("cdict", None)
     return _core.repeat(structure, rep, **kwargs)
 
 
@@ -31,5 +31,5 @@ def repeat(structure, rep, **kwargs):
 @ase_pmg_bridge
 def polycrystal(element, **kwargs):
     """Create polycrystal structure (jobflow-decorated)."""
-    kwargs.pop("kg", None)
+    kwargs.pop("cdict", None)
     return _core.polycrystal(element, **kwargs)

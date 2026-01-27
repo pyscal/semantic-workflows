@@ -23,7 +23,7 @@ def calculate_ev_curves(
     f_tol=0.0001,
     n_energy_steps=1e5,
     n_force_steps=1e6,
-    kg=None,
+    cdict=None,
     potential_type=None,
     potential_doi=None,
 ):
@@ -52,10 +52,10 @@ def calculate_ev_curves(
         Maximum energy minimization steps (default: 1e5)
     n_force_steps : float, optional
         Maximum force minimization steps (default: 1e6)
-    kg : dict, optional
+    cdict : dict, optional
         Knowledge graph dictionary for metadata (pyiron-specific, default: None)
     potential_type : str, optional
-        Potential type for KG (default: None)
+        Potential type for cdict (default: None)
     potential_doi : str, optional
         DOI for the potential (default: None)
 
@@ -93,7 +93,7 @@ def calculate_ev_curves(
     datadict = {"energy": e_fit, "volume": v_fit, "bulk_modulus": bulk_modulus}
 
     # Knowledge graph integration (pyiron-specific)
-    if kg is not None:
+    if cdict is not None:
         from .pyiron.build import update_attributes
         from .pyiron.templates import workflow_template
 
@@ -102,7 +102,7 @@ def calculate_ev_curves(
         scaling = final_volume / initial_volume
         final_structure = scale_atoms(structure, scaling)
         # A new structure is created and data is added!
-        final_structure = update_attributes(final_structure, kg, create_new=True)
+        final_structure = update_attributes(final_structure, cdict, create_new=True)
 
         # Add workflow details
         workflow = workflow_template.copy()
@@ -150,7 +150,7 @@ def calculate_ev_curves(
             "label": "LAMMPS",
         }
 
-        kg["workflow"].append(workflow.copy())
+        cdict["workflow"].append(workflow.copy())
 
     return datadict
 
@@ -239,7 +239,7 @@ def relax_structure(
     f_tol=0.0001,
     n_energy_steps=1e5,
     n_force_steps=1e6,
-    kg=None,
+    cdict=None,
     potential_type=None,
     potential_doi=None,
 ):
@@ -264,7 +264,7 @@ def relax_structure(
         Max energy steps (default: 1e5)
     n_force_steps : float, optional
         Max force steps (default: 1e6)
-    kg : dict, optional
+    cdict : dict, optional
         Knowledge graph (default: None)
     potential_type : str, optional
         Potential type (default: None)
@@ -319,13 +319,13 @@ def relax_structure(
 
     lmp.close()
 
-    if kg is not None:
+    if cdict is not None:
         from .pyiron.build import update_attributes
         from .pyiron.templates import workflow_template
 
         final_structure = read("tmp.dump", format="lammps-dump-text")
         final_structure.info["id"] = structure.info["id"]
-        final_structure = update_attributes(final_structure, kg, create_new=True)
+        final_structure = update_attributes(final_structure, cdict, create_new=True)
 
         workflow = workflow_template.copy()
 
@@ -367,7 +367,7 @@ def relax_structure(
             "label": "LAMMPS",
         }
 
-        kg["workflow"].append(workflow.copy())
+        cdict["workflow"].append(workflow.copy())
     return final_structure, ecoh, vol
 
 

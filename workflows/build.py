@@ -32,7 +32,7 @@ def bulk(
     u: Optional[float | int] = None,
     orthorhombic: bool = False,
     cubic: bool = False,
-    kg=None,
+    cdict=None,
 ):
     """
     Create a bulk crystal structure.
@@ -55,7 +55,7 @@ def bulk(
         Create orthorhombic cell
     cubic : bool
         Create cubic cell
-    kg : dict, optional
+    cdict : dict, optional
         Knowledge graph for metadata (pyiron-specific)
 
     Returns
@@ -78,7 +78,7 @@ def bulk(
     sdict["spacegroup_symbol"] = get_spacegroup_symbol(struct)
     sdict["spacegroup_number"] = get_spacegroup_number(struct)
 
-    if kg is not None:
+    if cdict is not None:
         from .pyiron.templates import sample_template as template_dict
 
         data = _generate_atomic_sample_data(
@@ -86,7 +86,7 @@ def bulk(
         )
         id = generate_id()
         data["id"] = id
-        kg["computational_sample"].append(data)
+        cdict["computational_sample"].append(data)
         struct.info["id"] = id
 
     return struct
@@ -95,7 +95,7 @@ def bulk(
 def repeat(
     structure: Atoms,
     repetitions,
-    kg=None,
+    cdict=None,
 ) -> Atoms:
     """
     Repeat structure.
@@ -106,7 +106,7 @@ def repeat(
         Input structure
     repetitions : tuple or int
         Repetition factors
-    kg : dict, optional
+    cdict : dict, optional
         Knowledge graph
 
     Returns
@@ -115,12 +115,12 @@ def repeat(
         Repeated structure
     """
     structure = structure.repeat(repetitions)
-    if kg is not None:
-        structure = update_attributes(structure, kg, repeat=list(repetitions))
+    if cdict is not None:
+        structure = update_attributes(structure, cdict, repeat=list(repetitions))
     return structure
 
 
-def polycrystal(structure: Atoms, box_size, grain_size, kg=None) -> Atoms:
+def polycrystal(structure: Atoms, box_size, grain_size, cdict=None) -> Atoms:
     """
     Create polycrystalline structure.
 
@@ -132,7 +132,7 @@ def polycrystal(structure: Atoms, box_size, grain_size, kg=None) -> Atoms:
         Box dimensions
     grain_size : float
         Grain size
-    kg : dict, optional
+    cdict : dict, optional
         Knowledge graph
 
     Returns
@@ -163,12 +163,12 @@ def polycrystal(structure: Atoms, box_size, grain_size, kg=None) -> Atoms:
     os.remove("tmp.xsf")
     os.remove("final.cfg")
 
-    if kg is not None:
+    if cdict is not None:
         poly_struct.info["id"] = structure.info["id"]
         # update system
         poly_struct = update_attributes(
             poly_struct,
-            kg,
+            cdict,
             repeat=(nx, ny, nz),
             grain_size=grain_size,
             number_of_grains=n_grains,
@@ -379,7 +379,7 @@ def _compute_structure_metadata(name, crystalstructure, a, b, c, covera):
 
 def update_attributes(
     atoms,
-    kg,
+    cdict,
     repeat=None,
     create_new=False,
     grain_size=None,
@@ -396,7 +396,7 @@ def update_attributes(
     id = atoms.info["id"]
 
     # find data
-    for d in kg["computational_sample"]:
+    for d in cdict["computational_sample"]:
         if d["id"] == id:
             data = d
 
@@ -439,6 +439,6 @@ def update_attributes(
         data["vacancy"] = vacancy
 
     if create_new:
-        kg["computational_sample"].append(data)
+        cdict["computational_sample"].append(data)
 
     return atoms

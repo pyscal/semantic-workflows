@@ -140,7 +140,7 @@ def calculate_thermal_properties(
     cores=1,
     n_equilibration_steps=15000,
     n_run_steps=25000,
-    kg=None,
+    cdict=None,
     potential_type=None,
     potential_doi=None,
 ):
@@ -168,7 +168,7 @@ def calculate_thermal_properties(
         Number of equilibration steps (default: 15000)
     n_run_steps : int, optional
         Number of production run steps (default: 25000)
-    kg : dict, optional
+    cdict : dict, optional
         Knowledge graph dictionary for metadata tracking (default: None)
     potential_type : str, optional
         Type of interatomic potential (default: None)
@@ -241,15 +241,15 @@ def calculate_thermal_properties(
     crossfluct = (efluct * ev_to_j) * (vol - np.mean(vol))
     ap = np.mean(crossfluct) / (kB * T * T * np.mean(vol))  # 1/K
 
-    # KG-related code - only execute when kg is not None
-    if kg is not None:
+    # cdict-related code - only execute when cdict is not None
+    if cdict is not None:
         from .pyiron.build import update_attributes
         from .pyiron.templates import property_template, workflow_template
 
         # Read dump system and update
         final_structure = read("tmp.dump", format="lammps-dump-text")
         final_structure.info["id"] = structure.info["id"]
-        final_structure = update_attributes(final_structure, kg, create_new=True)
+        final_structure = update_attributes(final_structure, cdict, create_new=True)
 
         workflow = workflow_template.copy()
 
@@ -312,7 +312,7 @@ def calculate_thermal_properties(
         }
 
         # Append a *copy* to avoid overwriting in subsequent iterations
-        kg["workflow"].append(workflow.copy())
+        cdict["workflow"].append(workflow.copy())
 
     results = {"specific_heat": cp, "thermal_expansion": ap, "volume": np.mean(vol)}
     return results
@@ -330,7 +330,7 @@ def calculate_free_energy(
     cores=1,
     folder_prefix="calc",
     input_dict=None,
-    kg=None,
+    cdict=None,
     potential_type=None,
     potential_doi=None,
 ):
@@ -364,7 +364,7 @@ def calculate_free_energy(
         Prefix for calculation folder (default: 'calc')
     input_dict : dict, optional
         Custom input dictionary for calphy (default: None)
-    kg : dict, optional
+    cdict : dict, optional
         Knowledge graph dictionary for metadata tracking (default: None)
     potential_type : str, optional
         Type of interatomic potential (default: None)
@@ -436,8 +436,8 @@ def calculate_free_energy(
         pres = pressure
         fe = results.get("free_energy", results.get("helmholtz_energy", None))
 
-    # KG-related code - only execute when kg is not None
-    if kg is not None:
+    # cdict-related code - only execute when cdict is not None
+    if cdict is not None:
         from .pyiron.build import update_attributes
         from .pyiron.templates import property_template, workflow_template
 
@@ -447,7 +447,7 @@ def calculate_free_energy(
             atom_style="atomic",
         )
         final_structure.info["id"] = structure.info["id"]
-        final_structure = update_attributes(final_structure, kg, create_new=True)
+        final_structure = update_attributes(final_structure, cdict, create_new=True)
 
         workflow = workflow_template.copy()
 
@@ -522,6 +522,6 @@ def calculate_free_energy(
         workflow["software"] = [software1, software2]
 
         # Append a *copy* to avoid overwriting in subsequent iterations
-        kg["workflow"].append(workflow.copy())
+        cdict["workflow"].append(workflow.copy())
 
     return results

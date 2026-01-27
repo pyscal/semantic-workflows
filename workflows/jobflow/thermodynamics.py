@@ -14,8 +14,8 @@ from .. import thermodynamics as _core
 @ase_pmg_bridge
 def calculate_thermal_properties(structure, pair_style, pair_coeff, **kwargs):
     """Calculate thermal properties (jobflow-decorated)."""
-    # Remove KG-related parameters (not supported in jobflow)
-    kwargs.pop("kg", None)
+    # Remove cdict-related parameters (not supported in jobflow)
+    kwargs.pop("cdict", None)
     kwargs.pop("potential_type", None)
     kwargs.pop("potential_doi", None)
     return _core.calculate_thermal_properties(
@@ -27,8 +27,8 @@ def calculate_thermal_properties(structure, pair_style, pair_coeff, **kwargs):
 @ase_pmg_bridge
 def calculate_free_energy(structure, pair_style, pair_coeff, **kwargs):
     """Calculate free energy (jobflow-decorated)."""
-    # Remove KG-related parameters (not supported in jobflow)
-    kwargs.pop("kg", None)
+    # Remove cdict-related parameters (not supported in jobflow)
+    kwargs.pop("cdict", None)
     kwargs.pop("potential_type", None)
     kwargs.pop("potential_doi", None)
     return _core.calculate_free_energy(structure, pair_style, pair_coeff, **kwargs)

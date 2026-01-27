@@ -155,7 +155,7 @@ def calculate_elastic_constants(
     energy_tolerance=0.0,
     force_tolerance=1.0e-15,
     max_iterations=100,
-    kg=None,
+    cdict=None,
     potential_type=None,
     potential_doi=None,
 ):
@@ -180,7 +180,7 @@ def calculate_elastic_constants(
         Force tolerance for minimization
     max_iterations : int, optional
         Maximum iterations for minimization
-    kg : ConceptualDict, optional
+    cdict : ConceptualDict, optional
         Knowledge graph for metadata (pyiron only)
     potential_type : str, optional
         Type of interatomic potential (pyiron only)
@@ -395,7 +395,7 @@ def calculate_elastic_constants(
         ]
     )
 
-    if kg is not None:
+    if cdict is not None:
         from .pyiron.templates import property_template, workflow_template
         from .pyiron.build import update_attributes
 
@@ -593,7 +593,7 @@ def calculate_elastic_constants(
         }
 
         # Append a *copy* to avoid overwriting in subsequent iterations
-        kg["workflow"].append(workflow.copy())
+        cdict["workflow"].append(workflow.copy())
 
     results = {
         "C_matrix": c_matrix,
@@ -617,7 +617,7 @@ def mechanical_response_test(
     n_run_steps=10000,
     strain_rate=1e-5,
     dump_interval=10000,  # dump trajectory every N steps
-    kg=None,
+    cdict=None,
     potential_type=None,
     potential_doi=None,
 ):
@@ -648,7 +648,7 @@ def mechanical_response_test(
         Strain rate
     dump_interval : int, optional
         Trajectory dump interval
-    kg : ConceptualDict, optional
+    cdict : ConceptualDict, optional
         Knowledge graph for metadata (pyiron only)
     potential_type : str, optional
         Type of interatomic potential (pyiron only)
@@ -762,14 +762,14 @@ def mechanical_response_test(
     sh = (sigmax + sigmay + sigmaz) / 3
 
     # now process our data
-    if kg is not None:
+    if cdict is not None:
         from .pyiron.templates import workflow_template
         from .pyiron.build import update_attributes
 
         final_structure = read("final.lammpstrj", format="lammps-dump-text")
         final_structure.info["id"] = structure.info["id"]
         final_structure = update_attributes(
-            final_structure, kg, create_new=True, ignore_positions=True
+            final_structure, cdict, create_new=True, ignore_positions=True
         )
 
         workflow = workflow_template.copy()
@@ -840,7 +840,7 @@ def mechanical_response_test(
         workflow["software"] = [software1]
 
         # Append a *copy* to avoid overwriting in subsequent iterations
-        kg["workflow"].append(workflow.copy())
+        cdict["workflow"].append(workflow.copy())
 
     if mode == "hydrostatic":
         strain = e
