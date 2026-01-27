@@ -9,10 +9,25 @@ from jobflow import job
 from .utils import ase_pmg_bridge
 from .. import evcurves as _core
 
-# Decorate core functions with jobflow decorators
-# Note: jobflow functions don't use kg, potential_type, potential_doi parameters
-calculate_ev_curves = ase_pmg_bridge(job(_core.calculate_ev_curves))
-relax_structure = ase_pmg_bridge(job(_core.relax_structure))
+
+@job
+@ase_pmg_bridge
+def calculate_ev_curves(structure, pair_style, pair_coeff, **kwargs):
+    """Calculate energy-volume curves (jobflow-decorated)."""
+    # Remove KG-related parameters (not supported in jobflow)
+    kwargs.pop("kg", None)
+    kwargs.pop("potential_type", None)
+    kwargs.pop("potential_doi", None)
+    return _core.calculate_ev_curves(structure, pair_style, pair_coeff, **kwargs)
+
+
+@job
+@ase_pmg_bridge
+def relax_structure(structure, pair_style, pair_coeff, **kwargs):
+    """Relax structure (jobflow-decorated)."""
+    kwargs.pop("kg", None)
+    return _core.relax_structure(structure, pair_style, pair_coeff, **kwargs)
+
 
 # Re-export utility functions (no decoration needed)
 scale_atoms = _core.scale_atoms
