@@ -5,7 +5,7 @@ Modular workflows for mechanical and thermodynamic properties of body-centered c
 Users can run atomistic simulations using the LAMMPS molecular dynamics software, with examples provided for embedded-atom method (EAM) potentials. The demonstrator also allows users to inspect the conceptual dictionary associated with each workflow, which captures workflow inputs, outputs, and semantic annotations. This interactive setup provides a lightweight environment for exploring how knowledge-based workflows are constructed, executed, and semantically enriched, without requiring local installation or configuration of simulation tools.
 
 ##### Highlights
-- pyiron: used as a workflow manager
+- pyiron, joblow: used as a workflow manager
 - atomRDF: Automated semantic annotation of atomistic simulation outputs.
 - ASMO and CMSO: Standardized ontology framework for atomistic simulation and computational 
 
@@ -151,7 +151,7 @@ wf.parse("workflow_metadata.yaml")
 
 ## Run SPARQL queries
 
-### Programatically using [tools$RDF](https://tools4rdf.readthedocs.io/en/latest/)
+### Programatically using [tools4RDF](https://tools4rdf.readthedocs.io/en/latest/)
 
 Find all the samples, and calculated Bulk Modulus:
 
