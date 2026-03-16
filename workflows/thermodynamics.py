@@ -244,7 +244,7 @@ def calculate_thermal_properties(
     # cdict-related code - only execute when cdict is not None
     if cdict is not None:
         from .pyiron.build import update_attributes
-        from .pyiron.templates import property_template, workflow_template
+        from conceptual_dictionary import workflow_template
 
         # Read dump system and update
         final_structure = read("tmp.dump", format="lammps-dump-text")
@@ -442,7 +442,7 @@ def calculate_free_energy(
     # cdict-related code - only execute when cdict is not None
     if cdict is not None:
         from .pyiron.build import update_attributes
-        from .pyiron.templates import property_template, workflow_template
+        from conceptual_dictionary import workflow_template
 
         final_structure = read(
             os.path.join(simfolder, "conf.equilibration.data"),

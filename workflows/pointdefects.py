@@ -9,7 +9,7 @@ from collections import Counter
 import random
 import string
 import copy
-from .pyiron.templates import sample_template as template_dict
+from conceptual_dictionary import sample_template as template_dict
 from .pyiron.build import update_attributes
 from pyscal3 import System
 

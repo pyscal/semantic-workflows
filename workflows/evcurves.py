@@ -95,9 +95,7 @@ def calculate_ev_curves(
     # Knowledge graph integration (pyiron-specific)
     if cdict is not None:
         from .pyiron.build import update_attributes
-        from .pyiron.templates import workflow_template
-
-        # Create a scaled structure with right scale
+        from conceptual_dictionary import workflow_template
         final_volume = V0 * len(structure)
         scaling = final_volume / initial_volume
         final_structure = scale_atoms(structure, scaling)
@@ -322,7 +320,7 @@ def relax_structure(
 
     if cdict is not None:
         from .pyiron.build import update_attributes
-        from .pyiron.templates import workflow_template
+        from conceptual_dictionary import workflow_template
 
         final_structure = read("tmp.dump", format="lammps-dump-text")
         final_structure.info["id"] = structure.info["id"]

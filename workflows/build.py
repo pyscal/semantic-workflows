@@ -79,7 +79,7 @@ def bulk(
     sdict["spacegroup_number"] = get_spacegroup_number(struct)
 
     if cdict is not None:
-        from .pyiron.templates import sample_template as template_dict
+        from conceptual_dictionary import sample_template as template_dict
 
         data = _generate_atomic_sample_data(
             struct, sdict, repeat=None, template_dict=template_dict

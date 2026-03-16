@@ -396,13 +396,7 @@ def calculate_elastic_constants(
     )
 
     if cdict is not None:
-        from .pyiron.templates import property_template, workflow_template
-        from .pyiron.build import update_attributes
-
-        workflow = workflow_template.copy()
-        workflow["method"] = "MolecularStatics"
-        workflow["input_sample"] = [structure.info["id"]]
-        sample_id = structure.info["id"]
+        from conceptual_dictionary import workflow_template
 
         outputs = [
             {
@@ -765,8 +759,8 @@ def mechanical_response_test(
 
     # now process our data
     if cdict is not None:
-        from .pyiron.templates import workflow_template
         from .pyiron.build import update_attributes
+        from conceptual_dictionary import workflow_template
 
         final_structure = read("final.lammpstrj", format="lammps-dump-text")
         final_structure.info["id"] = structure.info["id"]
