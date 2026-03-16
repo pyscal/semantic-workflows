@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantic-workflows"
+version = "0.1.0"
+description = "Semantic LAMMPS workflows with provenance capture via conceptual-dictionary"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pyyaml",
+    "mendeleev",
+    "tqdm",
+    "uncertainties",
+    "pydantic>=2.3.0",
+    "pyiron_workflow",
+    "conceptual-dictionary",
+]
+
+[project.optional-dependencies]
+lammps = ["pylammpsmpi"]
+jobflow = ["jobflow"]
+calphy = ["calphy"]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["semantic_workflows*"]

@@ -1,10 +1,10 @@
 from pyiron_workflow import as_function_node
-from workflows.pointdefects import (
+from ..pointdefects import (
     create_interstitial as _create_interstitial,
     create_substitutional as _create_substitutional,
     create_vacancy as _create_vacancy,
 )
-from workflows.pointdefects import (
+from ..pointdefects import (
     calculate_vacancy_formation_energy,
     calculate_substitutional_formation_energy,
     calculate_interstitial_formation_energy,

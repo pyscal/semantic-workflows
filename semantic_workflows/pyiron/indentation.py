@@ -4,7 +4,7 @@ Imports core functions and decorates with @as_function_node.
 """
 
 from pyiron_workflow import as_function_node
-from workflows.indentation import (
+from ..indentation import (
     indentation_test as _indentation_test,
     read_final_structure as _read_final_structure,
     plot_force_depth as _plot_force_depth,
