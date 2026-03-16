@@ -130,6 +130,53 @@ def create_substitutional(
     return atoms
 
 
+def create_vacancy(atoms, index=None, cdict=None):
+    """
+    Remove one atom to create a vacancy supercell.
+
+    Parameters
+    ----------
+    atoms : ase.Atoms
+        Input structure (N atoms). Must have ``atoms.info["id"]`` set when
+        ``cdict`` is provided.
+    index : int, optional
+        Index of the atom to remove.  If None, a random atom is chosen.
+    cdict : ConceptualDict, optional
+        If provided, the sample record is updated and an operation entry is
+        appended.
+
+    Returns
+    -------
+    ase.Atoms
+        Defect structure with N-1 atoms.
+    """
+    if index is None:
+        index = np.random.randint(len(atoms))
+
+    new_atoms = atoms.copy()
+    del new_atoms[index]
+
+    no_of_vacancies = 1
+    conc_of_vacancies = no_of_vacancies / len(atoms)
+
+    if cdict is not None:
+        new_atoms.info["id"] = atoms.info["id"]
+        vacancy_record = {
+            "concentration": conc_of_vacancies,
+            "number": no_of_vacancies,
+        }
+        new_atoms = update_attributes(
+            new_atoms, cdict, create_new=False, vacancy=vacancy_record
+        )
+        operation = {
+            "method": "RemoveAtom",
+            "input_sample": atoms.info["id"],
+            "output_sample": new_atoms.info["id"],
+        }
+        cdict["operation"].append(operation)
+    return new_atoms
+
+
 def calculate_vacancy_formation_energy(
     bulk_structure,
     defect_structure,
