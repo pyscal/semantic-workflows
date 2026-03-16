@@ -8,12 +8,12 @@ sample_template = {
             "unit_cell": {
                 "bravais_lattice": None,
                 "lattice_parameter": None,
-                "angle": []
-            }
-        }
+                "angle": [],
+            },
+        },
     },
     "simulation_cell": {
-        "volume": {'value': None},
+        "volume": {"value": None},
         "number_of_atoms": None,
         "length": [],
         "vector": [],
@@ -22,17 +22,24 @@ sample_template = {
         "grain_size": None,
         "number_of_grains": 0,
     },
-    'atom_attribute': {
-        'position': None,
-        'species': None,
-    }
+    "atom_attribute": {
+        "position": None,
+        "species": None,
+        # file-reference mode (preferred for large structures)
+        "file_path": None,
+        "file_format": None,
+        "file_species": None,
+    },
+    "calculated_property": [],
 }
 
 property_template = {
-    "basename": None,
+    "id": None,  # optional local ID for math_operation cross-referencing
+    "label": None,  # primary name read by atomRDF WorkflowParser
+    "basename": None,  # must match ASMO ontology term
     "value": None,
     "unit": None,
-    "associate_to_sample": []
+    "associate_to_sample": [],
 }
 
 workflow_template = {
@@ -42,17 +49,14 @@ workflow_template = {
     "input_parameter": [],
     "input_sample": [],
     "output_sample": [],
+    "output_parameter": [],
     "calculated_property": [],
     "degrees_of_freedom": [],
     "interatomic_potential": {
-          "potential_type": None,
-          "uri": None,
-    },
-    "software": {
+        "potential_type": None,
         "uri": None,
-        "version": None,
-        "label": None,
     },
+    "software": [],
     "workflow_manager": {
         "uri": None,
         "version": None,

@@ -274,11 +274,11 @@ def calculate_thermal_properties(
         workflow["input_parameter"] = inputs
         outputs = [
             {
-                "label": "SpecificHeat",
+                "label": "SpecificHeatCapacity",
                 "value": cp,
                 "unit": "J-PER-GM-K",
                 "associate_to_sample": [new_id],
-                "basename": "SpecificHeat",
+                "basename": "SpecificHeatCapacity",
             },
             {
                 "label": "EquilibriumVolume",
@@ -291,6 +291,7 @@ def calculate_thermal_properties(
                 "label": "ThermalExpansionCoefficient",
                 "basename": "ThermalExpansionCoefficient",
                 "value": ap,
+                "unit": "PER-K",
                 "associate_to_sample": [new_id],
             },
         ]
@@ -306,10 +307,12 @@ def calculate_thermal_properties(
             "potential_type": potential_type,
             "uri": potential_doi,
         }
-        workflow["software"] = {
-            "uri": "https://doi.org/10.1016/j.cpc.2021.108171",
-            "label": "LAMMPS",
-        }
+        workflow["software"] = [
+            {
+                "uri": "https://doi.org/10.1016/j.cpc.2021.108171",
+                "label": "LAMMPS",
+            }
+        ]
 
         # Append a *copy* to avoid overwriting in subsequent iterations
         cdict["workflow"].append(workflow.copy())

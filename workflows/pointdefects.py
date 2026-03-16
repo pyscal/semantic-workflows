@@ -86,8 +86,12 @@ def create_interstitial(
             new_atoms, cdict, create_new=False, interstitial=defect_record
         )
 
-        # ok good, now we need to add activity
-        # for the moment we will just create defected structures, and thats it
+        operation = {
+            "method": "AddAtom",
+            "input_sample": atoms.info["id"],
+            "output_sample": new_atoms.info["id"],
+        }
+        cdict["operation"].append(operation)
     return new_atoms
 
 
@@ -117,6 +121,10 @@ def create_substitutional(
             atoms, cdict, create_new=False, substitutional=defect_record
         )
 
-        # ok good, now we need to add activity
-        # for the moment we will just create defected structures, and thats it
+        operation = {
+            "method": "SubstituteAtom",
+            "input_sample": atoms.info["id"],
+            "output_sample": new_atoms.info["id"],
+        }
+        cdict["operation"].append(operation)
     return atoms

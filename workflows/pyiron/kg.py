@@ -4,13 +4,17 @@ import numpy as np
 import string
 import random
 
+
 class KnowledgeDict(dict):
     def __init__(self, *args, **kwargs):
-        data = {'computational_sample': [], 'workflow': []}
+        data = {
+            "computational_sample": [],
+            "workflow": [],
+            "operation": [],
+            "math_operation": [],
+        }
         super().__init__(data, *args, **kwargs)
 
-
-    
     @staticmethod
     def _clean_data(obj: Any) -> Any:
         if isinstance(obj, dict):
@@ -32,12 +36,12 @@ class KnowledgeDict(dict):
 
     def to_yaml(self, filepath: str, sort_keys: bool = False) -> None:
         clean_dict = KnowledgeDict._clean_data(dict(self))
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             yaml.safe_dump(clean_dict, f, sort_keys=sort_keys, allow_unicode=True)
 
     @classmethod
     def from_yaml(cls, filepath: str) -> "KnowledgeDict":
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = yaml.safe_load(f)
         kg = cls()
         kg.update(data)

@@ -138,17 +138,18 @@ def calculate_ev_curves(
             },
         ]
 
-        workflow["thermodynamic_ensemble"] = "MicrocanonicalEnsemble"
         workflow["degrees_of_freedom"] = ["AtomicPositionRelaxation"]
         workflow["calculated_property"] = outputs
         workflow["interatomic_potential"] = {
             "potential_type": potential_type,
             "uri": potential_doi,
         }
-        workflow["software"] = {
-            "uri": "https://doi.org/10.1016/j.cpc.2021.108171",
-            "label": "LAMMPS",
-        }
+        workflow["software"] = [
+            {
+                "uri": "https://doi.org/10.1016/j.cpc.2021.108171",
+                "label": "LAMMPS",
+            }
+        ]
 
         cdict["workflow"].append(workflow.copy())
 
@@ -352,7 +353,6 @@ def relax_structure(
             },
         ]
 
-        workflow["thermodynamic_ensemble"] = "MicrocanonicalEnsemble"
         workflow["degrees_of_freedom"] = [
             "AtomicPositionRelaxation",
             "CellVolumeRelaxation",
@@ -362,10 +362,12 @@ def relax_structure(
             "potential_type": potential_type,
             "uri": potential_doi,
         }
-        workflow["software"] = {
-            "uri": "https://doi.org/10.1016/j.cpc.2021.108171",
-            "label": "LAMMPS",
-        }
+        workflow["software"] = [
+            {
+                "uri": "https://doi.org/10.1016/j.cpc.2021.108171",
+                "label": "LAMMPS",
+            }
+        ]
 
         cdict["workflow"].append(workflow.copy())
     return final_structure, ecoh, vol
