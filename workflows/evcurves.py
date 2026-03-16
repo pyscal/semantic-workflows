@@ -96,6 +96,7 @@ def calculate_ev_curves(
     if cdict is not None:
         from .pyiron.build import update_attributes
         from conceptual_dictionary import workflow_template
+
         final_volume = V0 * len(structure)
         scaling = final_volume / initial_volume
         final_structure = scale_atoms(structure, scaling)
