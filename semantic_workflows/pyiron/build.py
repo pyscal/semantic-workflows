@@ -7,7 +7,6 @@ apply pyiron_workflow decorators.
 
 from pyiron_workflow import as_function_node
 from .. import build as _core
-from .templates import sample_template as template_dict
 
 # Decorate core functions with pyiron_workflow decorator
 bulk = as_function_node(_core.bulk)
