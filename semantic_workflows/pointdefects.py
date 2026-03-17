@@ -74,8 +74,6 @@ def create_interstitial(
 
     # ok now we need to update things
     if cdict is not None:
-        new_atoms.info["id"] = atoms.info["id"]
-
         # add defect
         defect_record = {
             "label": void_type,
@@ -83,7 +81,7 @@ def create_interstitial(
             "number": no_of_impurities,
         }
         new_atoms = update_attributes(
-            new_atoms, cdict, create_new=False, interstitial=defect_record
+            new_atoms, cdict, create_new=True, interstitial=defect_record
         )
 
         operation = {
@@ -160,13 +158,12 @@ def create_vacancy(atoms, index=None, cdict=None):
     conc_of_vacancies = no_of_vacancies / len(atoms)
 
     if cdict is not None:
-        new_atoms.info["id"] = atoms.info["id"]
         vacancy_record = {
             "concentration": conc_of_vacancies,
             "number": no_of_vacancies,
         }
         new_atoms = update_attributes(
-            new_atoms, cdict, create_new=False, vacancy=vacancy_record
+            new_atoms, cdict, create_new=True, vacancy=vacancy_record
         )
         operation = {
             "method": "DeleteAtom",
