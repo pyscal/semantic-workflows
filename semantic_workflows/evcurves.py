@@ -337,6 +337,7 @@ def relax_structure(
         workflow["output_sample"] = [new_id]
 
         from .build import generate_id as _gen_id
+
         energy_id = _gen_id()
         final_structure.info["energy_id"] = energy_id
 

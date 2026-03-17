@@ -25,6 +25,7 @@ def generate_id(length=7):
     wrappers) cannot cause ID collisions across iterations.
     """
     import os
+
     chars = string.ascii_letters + string.digits  # A–Z, a–z, 0–9
     return "".join(chars[b % 62] for b in os.urandom(length))
 
@@ -295,7 +296,7 @@ def _get_symmetry_dict(system):
 
 def _generate_atomic_sample_data(atoms, sdict=None, repeat=None, template_dict=None):
     """Generate atomic sample metadata."""
-    data = template_dict.copy()
+    data = copy.deepcopy(template_dict)
     data["material"]["element_ratio"] = get_chemical_composition(atoms)
 
     if sdict is not None:
