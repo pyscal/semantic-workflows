@@ -1,0 +1,22 @@
+Metadata-Version: 2.4
+Name: semantic-workflows
+Version: 0.1.0
+Summary: Semantic LAMMPS workflows with provenance capture via conceptual-dictionary
+Requires-Python: >=3.10
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: pyyaml
+Requires-Dist: mendeleev
+Requires-Dist: tqdm
+Requires-Dist: uncertainties
+Requires-Dist: pydantic>=2.3.0
+Requires-Dist: pyiron_workflow
+Requires-Dist: conceptual-dictionary
+Provides-Extra: lammps
+Requires-Dist: pylammpsmpi; extra == "lammps"
+Provides-Extra: jobflow
+Requires-Dist: jobflow; extra == "jobflow"
+Provides-Extra: calphy
+Requires-Dist: calphy; extra == "calphy"
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"

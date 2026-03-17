@@ -222,10 +222,15 @@ def calculate_vacancy_formation_energy(
         )
 
         # Step 1: delta_e = e_defect - e_bulk  (eV/atom)
+        # Use stored energy property IDs when available so the KG carries
+        # proper provenance links rather than anonymous numeric literals.
+        defect_energy_id = defect_structure.info.get("energy_id")
+        bulk_energy_id = bulk_structure.info.get("energy_id")
+
         op1 = copy.deepcopy(math_operation_template)
         op1["type"] = "Subtraction"
-        op1["minuend"] = float(e_defect)
-        op1["subtrahend"] = float(e_bulk)
+        op1["minuend"] = defect_energy_id if defect_energy_id else float(e_defect)
+        op1["subtrahend"] = bulk_energy_id if bulk_energy_id else float(e_bulk)
         op1["result"] = {
             "id": delta_id,
             "label": "CohesiveEnergyDifference",

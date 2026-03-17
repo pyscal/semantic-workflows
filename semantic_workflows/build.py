@@ -18,9 +18,15 @@ import copy
 
 
 def generate_id(length=7):
-    """Generate a random alphanumeric ID of given length."""
+    """Generate a random alphanumeric ID of given length.
+
+    Uses ``os.urandom`` rather than Python's ``random`` module so that
+    third-party libraries that call ``random.seed()`` (e.g. PyIron/LAMMPS
+    wrappers) cannot cause ID collisions across iterations.
+    """
+    import os
     chars = string.ascii_letters + string.digits  # A–Z, a–z, 0–9
-    return "".join(random.choices(chars, k=length))
+    return "".join(chars[b % 62] for b in os.urandom(length))
 
 
 def bulk(

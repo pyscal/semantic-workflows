@@ -336,8 +336,13 @@ def relax_structure(
         new_id = final_structure.info["id"]
         workflow["output_sample"] = [new_id]
 
+        from .build import generate_id as _gen_id
+        energy_id = _gen_id()
+        final_structure.info["energy_id"] = energy_id
+
         outputs = [
             {
+                "id": energy_id,
                 "label": "EquilibriumEnergy",
                 "value": np.round(ecoh, decimals=4),
                 "unit": "EV",
