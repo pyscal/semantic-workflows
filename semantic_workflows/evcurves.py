@@ -94,7 +94,7 @@ def calculate_ev_curves(
 
     # Knowledge graph integration (pyiron-specific)
     if cdict is not None:
-        from .pyiron.build import update_attributes
+        from .build import update_attributes
         from conceptual_dictionary import workflow_template
 
         final_volume = V0 * len(structure)
@@ -131,7 +131,7 @@ def calculate_ev_curves(
             {
                 "label": "BulkModulus",
                 "basename": "BulkModulus",
-                "value": np.round(B0, decimals=2),
+                "value": np.round(bulk_modulus, decimals=2),
                 "unit": "GigaPA",
                 "associate_to_sample": [new_id],
             },
@@ -319,11 +319,12 @@ def relax_structure(
 
     lmp.close()
 
+    final_structure = read("tmp.dump", format="lammps-dump-text")
+
     if cdict is not None:
-        from .pyiron.build import update_attributes
+        from .build import update_attributes
         from conceptual_dictionary import workflow_template
 
-        final_structure = read("tmp.dump", format="lammps-dump-text")
         final_structure.info["id"] = structure.info["id"]
         final_structure = update_attributes(final_structure, cdict, create_new=True)
 

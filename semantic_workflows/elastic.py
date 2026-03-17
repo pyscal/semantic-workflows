@@ -398,6 +398,9 @@ def calculate_elastic_constants(
     if cdict is not None:
         from conceptual_dictionary import workflow_template
 
+        sample_id = structure.info["id"]
+        workflow = workflow_template.copy()
+
         outputs = [
             {
                 "label": "C11",
@@ -575,6 +578,9 @@ def calculate_elastic_constants(
             },
         ]
 
+        workflow["method"] = "MolecularStatics"
+        workflow["input_sample"] = [structure.info["id"]]
+        workflow["output_sample"] = [structure.info["id"]]
         workflow["degrees_of_freedom"] = ["AtomicPositionRelaxation"]
         workflow["calculated_property"] = outputs
         workflow["interatomic_potential"] = {
@@ -759,7 +765,7 @@ def mechanical_response_test(
 
     # now process our data
     if cdict is not None:
-        from .pyiron.build import update_attributes
+        from .build import update_attributes
         from conceptual_dictionary import workflow_template
 
         final_structure = read("final.lammpstrj", format="lammps-dump-text")

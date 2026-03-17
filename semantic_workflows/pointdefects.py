@@ -10,7 +10,7 @@ import random
 import string
 import copy
 from conceptual_dictionary import sample_template as template_dict
-from .pyiron.build import update_attributes
+from .build import update_attributes
 from pyscal3 import System
 
 
@@ -46,7 +46,7 @@ def create_interstitial(
         if a is None:
             raise ValueError("please provide lattice constant")
         cutoff = a + threshold * 2
-        self.find.neighbors(method="cutoff", cutoff=cutoff)
+        sys.find.neighbors(method="cutoff", cutoff=cutoff)
         octa_pos = []
         for count, dist in enumerate(sys.atoms.neighbors.distance):
             diffs = np.abs(np.array(dist) - a)
@@ -169,7 +169,7 @@ def create_vacancy(atoms, index=None, cdict=None):
             new_atoms, cdict, create_new=False, vacancy=vacancy_record
         )
         operation = {
-            "method": "RemoveAtom",
+            "method": "DeleteAtom",
             "input_sample": atoms.info["id"],
             "output_sample": new_atoms.info["id"],
         }
@@ -225,7 +225,7 @@ def calculate_vacancy_formation_energy(
         )
 
         # Step 1: delta_e = e_defect - e_bulk  (eV/atom)
-        op1 = math_operation_template.copy()
+        op1 = copy.deepcopy(math_operation_template)
         op1["type"] = "Subtraction"
         op1["minuend"] = float(e_defect)
         op1["subtrahend"] = float(e_bulk)
@@ -240,7 +240,7 @@ def calculate_vacancy_formation_energy(
         cdict["math_operation"].append(op1)
 
         # Step 2: E_vac = (N-1) * delta_e
-        op2 = math_operation_template.copy()
+        op2 = copy.deepcopy(math_operation_template)
         op2["type"] = "Multiplication"
         op2["factor"] = [n_defect_ref, delta_id]
         op2["result"] = {
@@ -311,7 +311,7 @@ def calculate_substitutional_formation_energy(
         )
 
         # Step 1: e_tot_defect = N * e_defect
-        op1 = math_operation_template.copy()
+        op1 = copy.deepcopy(math_operation_template)
         op1["type"] = "Multiplication"
         op1["factor"] = [n_defect_ref, float(e_defect)]
         op1["result"] = {
@@ -327,7 +327,7 @@ def calculate_substitutional_formation_energy(
         # Step 2: e_ref_host = (N-1) * e_bulk
         # N-1 is not the atom count of any structure in this calculation, so
         # it remains a plain scalar.
-        op2 = math_operation_template.copy()
+        op2 = copy.deepcopy(math_operation_template)
         op2["type"] = "Multiplication"
         op2["factor"] = [n_atoms - 1, float(e_bulk)]
         op2["result"] = {
@@ -341,7 +341,7 @@ def calculate_substitutional_formation_energy(
         cdict["math_operation"].append(op2)
 
         # Step 3: e_diff = e_tot_defect - e_ref_host
-        op3 = math_operation_template.copy()
+        op3 = copy.deepcopy(math_operation_template)
         op3["type"] = "Subtraction"
         op3["minuend"] = e_tot_defect_id
         op3["subtrahend"] = e_ref_host_id
@@ -358,7 +358,7 @@ def calculate_substitutional_formation_energy(
         cdict["math_operation"].append(op3)
 
         # Step 4: E_sub = e_diff - e_ref
-        op4 = math_operation_template.copy()
+        op4 = copy.deepcopy(math_operation_template)
         op4["type"] = "Subtraction"
         op4["minuend"] = e_diff_id
         op4["subtrahend"] = float(e_ref)
@@ -432,7 +432,7 @@ def calculate_interstitial_formation_energy(
         n_bulk_ref = f"{bulk_id}.simulation_cell.number_of_atoms" if bulk_id else n_bulk
 
         # Step 1: e_tot_defect = N_defect * e_defect
-        op1 = math_operation_template.copy()
+        op1 = copy.deepcopy(math_operation_template)
         op1["type"] = "Multiplication"
         op1["factor"] = [n_defect_ref, float(e_defect)]
         op1["result"] = {
@@ -446,7 +446,7 @@ def calculate_interstitial_formation_energy(
         cdict["math_operation"].append(op1)
 
         # Step 2: e_tot_bulk = N_bulk * e_bulk
-        op2 = math_operation_template.copy()
+        op2 = copy.deepcopy(math_operation_template)
         op2["type"] = "Multiplication"
         op2["factor"] = [n_bulk_ref, float(e_bulk)]
         op2["result"] = {
@@ -460,7 +460,7 @@ def calculate_interstitial_formation_energy(
         cdict["math_operation"].append(op2)
 
         # Step 3: delta_e = e_tot_defect - e_tot_bulk
-        op3 = math_operation_template.copy()
+        op3 = copy.deepcopy(math_operation_template)
         op3["type"] = "Subtraction"
         op3["minuend"] = e_tot_defect_id
         op3["subtrahend"] = e_tot_bulk_id
@@ -475,7 +475,7 @@ def calculate_interstitial_formation_energy(
         cdict["math_operation"].append(op3)
 
         # Step 4: E_int = delta_e - e_ref
-        op4 = math_operation_template.copy()
+        op4 = copy.deepcopy(math_operation_template)
         op4["type"] = "Subtraction"
         op4["minuend"] = delta_id
         op4["subtrahend"] = float(e_ref)

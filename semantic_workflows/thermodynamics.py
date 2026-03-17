@@ -243,7 +243,7 @@ def calculate_thermal_properties(
 
     # cdict-related code - only execute when cdict is not None
     if cdict is not None:
-        from .pyiron.build import update_attributes
+        from .build import update_attributes
         from conceptual_dictionary import workflow_template
 
         # Read dump system and update
@@ -441,7 +441,7 @@ def calculate_free_energy(
 
     # cdict-related code - only execute when cdict is not None
     if cdict is not None:
-        from .pyiron.build import update_attributes
+        from .build import update_attributes
         from conceptual_dictionary import workflow_template
 
         final_structure = read(
