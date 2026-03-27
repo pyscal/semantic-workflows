@@ -16,4 +16,3 @@ relax_structure = as_function_node(_core.relax_structure)
 scale_atoms = _core.scale_atoms
 fit_bm = _core.fit_bm
 birch_murnaghan_eval = _core.birch_murnaghan_eval
-calculate_energy = _core.calculate_energy
