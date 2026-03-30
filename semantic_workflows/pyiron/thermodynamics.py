@@ -22,9 +22,14 @@ def calculate_thermal_properties(
     cdict=None,
     potential_type=None,
     potential_doi=None,
+    autovalidate=False,
+    cv_threshold=0.05,
+    alpha_min=1e-6,
+    alpha_max=1e-4,
+    convergence_threshold=0.1,
 ):
     """Calculate thermal properties (pyiron-decorated)."""
-    return _core.calculate_thermal_properties(
+    datadict = _core.calculate_thermal_properties(
         structure,
         pair_style,
         pair_coeff,
@@ -36,7 +41,13 @@ def calculate_thermal_properties(
         cdict=cdict,
         potential_type=potential_type,
         potential_doi=potential_doi,
+        autovalidate=autovalidate,
+        cv_threshold=cv_threshold,
+        alpha_min=alpha_min,
+        alpha_max=alpha_max,
+        convergence_threshold=convergence_threshold,
     )
+    return datadict
 
 
 @as_function_node
@@ -57,7 +68,7 @@ def calculate_free_energy(
     potential_doi=None,
 ):
     """Calculate free energy (pyiron-decorated)."""
-    return _core.calculate_free_energy(
+    datadict = _core.calculate_free_energy(
         structure,
         pair_style,
         pair_coeff,
@@ -73,6 +84,7 @@ def calculate_free_energy(
         potential_type=potential_type,
         potential_doi=potential_doi,
     )
+    return datadict
 
 
 # Re-export utility functions directly from core

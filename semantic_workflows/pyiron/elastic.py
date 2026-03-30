@@ -24,7 +24,7 @@ def calculate_elastic_constants(
     potential_doi=None,
 ):
     """Calculate elastic constants (pyiron-decorated)."""
-    return _core.calculate_elastic_constants(
+    datadict = _core.calculate_elastic_constants(
         structure,
         pair_style,
         pair_coeff,
@@ -37,6 +37,7 @@ def calculate_elastic_constants(
         potential_type=potential_type,
         potential_doi=potential_doi,
     )
+    return datadict
 
 
 @as_function_node
@@ -57,7 +58,7 @@ def mechanical_response_test(
     potential_doi=None,
 ):
     """Perform mechanical response test (pyiron-decorated)."""
-    return _core.mechanical_response_test(
+    datadict = _core.mechanical_response_test(
         structure,
         pair_style,
         pair_coeff,
@@ -73,3 +74,4 @@ def mechanical_response_test(
         potential_type=potential_type,
         potential_doi=potential_doi,
     )
+    return datadict

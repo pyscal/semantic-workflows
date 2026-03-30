@@ -143,6 +143,11 @@ def calculate_thermal_properties(
     cdict=None,
     potential_type=None,
     potential_doi=None,
+    autovalidate=False,
+    cv_threshold=0.05,
+    alpha_min=1e-6,
+    alpha_max=1e-4,
+    convergence_threshold=0.1,
 ):
     """
     Calculate thermal properties using NPT molecular dynamics.
@@ -174,11 +179,25 @@ def calculate_thermal_properties(
         Type of interatomic potential (default: None)
     potential_doi : str, optional
         DOI of interatomic potential (default: None)
+    autovalidate : bool, optional
+        If True, run automated validation checks on the trajectory (default: False)
+    cv_threshold : float, optional
+        Max allowed coefficient of variation for temperature stability and
+        max relative half-half difference for pressure stability (default: 0.05)
+    alpha_min : float, optional
+        Minimum physically reasonable thermal expansion coefficient in K⁻¹ (default: 1e-6)
+    alpha_max : float, optional
+        Maximum physically reasonable thermal expansion coefficient in K⁻¹ (default: 1e-4)
+    convergence_threshold : float, optional
+        Max allowed relative difference between first and second half of energy
+        trajectory for statistical convergence check (default: 0.1)
 
     Returns
     -------
     dict
-        Dictionary containing specific_heat, thermal_expansion, and volume
+        Dictionary containing specific_heat, thermal_expansion, and volume.
+        If autovalidate=True, also contains is_valid (bool) and validation (dict)
+        with keys temp_stable, press_stable, statistically_converged, physical_range.
     """
     ev_to_j = sc.physical_constants["electron volt-joule relationship"][0]
     Av = sc.physical_constants["Avogadro constant"][0]
@@ -318,6 +337,45 @@ def calculate_thermal_properties(
         cdict["workflow"].append(workflow.copy())
 
     results = {"specific_heat": cp, "thermal_expansion": ap, "volume": np.mean(vol)}
+
+    if autovalidate:
+        n = len(temp)
+        mid = n // 2
+
+        # 1. Temperature stability: trajectory mean close to target
+        temp_stable = bool(
+            abs(np.mean(temp) - temperature) / temperature < cv_threshold
+        )
+
+        # 2. Pressure stability: first and second half means agree
+        press1, press2 = np.mean(press[:mid]), np.mean(press[mid:])
+        press_denom = max(abs(np.mean(press)), 1.0)  # avoid div-by-zero at P=0
+        press_stable = bool(abs(press1 - press2) / press_denom < cv_threshold)
+
+        # 3. Statistical convergence: total energy mean converged between halves
+        e_denom = abs(np.mean(etotal))
+        if e_denom > 0:
+            statistically_converged = bool(
+                abs(np.mean(etotal[:mid]) - np.mean(etotal[mid:])) / e_denom
+                < convergence_threshold
+            )
+        else:
+            statistically_converged = False
+
+        # 4. Physical range: positive Cp and reasonable thermal expansion
+        physical_range = bool(cp > 0 and alpha_min <= ap <= alpha_max)
+
+        is_valid = all(
+            [temp_stable, press_stable, statistically_converged, physical_range]
+        )
+        results["is_valid"] = is_valid
+        results["validation"] = {
+            "temp_stable": temp_stable,
+            "press_stable": press_stable,
+            "statistically_converged": statistically_converged,
+            "physical_range": physical_range,
+        }
+
     return results
 
 
